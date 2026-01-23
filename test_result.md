@@ -107,87 +107,108 @@ user_problem_statement: "App Officina 4.0 - Ecosistema digitale per autofficina 
 backend:
   - task: "Auth Session Exchange API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented Emergent Google OAuth session exchange endpoint"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Auth endpoint working correctly. Test user authenticated successfully with session token. GET /api/auth/me returns proper user data."
 
   - task: "Vehicles CRUD API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented GET/POST/PUT/DELETE for user vehicles"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Vehicles CRUD working correctly. Successfully created vehicle (Fiat Panda AB123CD), GET vehicles returns empty list initially, POST creates vehicle with proper vehicle_id."
 
   - task: "Services API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented GET services with init endpoint"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Services API working correctly. POST /api/init-services initializes 6 default services, GET /api/services returns all 6 services with proper structure."
 
   - task: "Bookings CRUD API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented booking creation and management"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Bookings CRUD working correctly. Successfully created booking with vehicle_id and service_id, returns proper booking_id, validates vehicle ownership."
 
   - task: "Vehicle Status Tracking API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented status tracking with history"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Vehicle tracking working correctly. GET /api/tracking/{booking_id} returns tracking history, initial status 'waiting' created automatically on booking creation."
 
   - task: "Time Slots API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented available time slots endpoint"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Time slots API working correctly. GET /api/slots?date=2026-01-24 returns 10 time slots (8:00-18:00) with availability status."
 
   - task: "Admin Bookings API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented admin endpoints for booking management"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Admin APIs working correctly. GET /api/admin/bookings returns enriched booking data, POST /api/admin/tracking successfully updates vehicle status to 'checked_in'."
 
 frontend:
   - task: "Login Screen with Google OAuth"
