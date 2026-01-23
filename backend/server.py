@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +6,10 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timezone, timedelta
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,38 +19,717 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+# Create the main app
+app = FastAPI(title="Autofficina Euganea API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+# ===================== MODELS =====================
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+# Auth Models
+class User(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    phone: Optional[str] = None
+    created_at: datetime
+    gdpr_accepted: bool = False
+    marketing_accepted: bool = False
 
-# Add your routes to the router instead of directly to app
+class UserCreate(BaseModel):
+    email: str
+    name: str
+    picture: Optional[str] = None
+
+class SessionDataResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    session_token: str
+
+# Vehicle Models
+class Vehicle(BaseModel):
+    vehicle_id: str = Field(default_factory=lambda: f"veh_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    marca: str  # Brand
+    modello: str  # Model
+    targa: str  # License plate
+    anno: Optional[int] = None  # Year
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VehicleCreate(BaseModel):
+    marca: str
+    modello: str
+    targa: str
+    anno: Optional[int] = None
+
+class VehicleUpdate(BaseModel):
+    marca: Optional[str] = None
+    modello: Optional[str] = None
+    targa: Optional[str] = None
+    anno: Optional[int] = None
+
+# Service Models
+class Service(BaseModel):
+    service_id: str = Field(default_factory=lambda: f"srv_{uuid.uuid4().hex[:12]}")
+    name: str
+    description: str
+    estimated_hours: float
+    price_estimate: Optional[float] = None
+    category: str  # tagliando, gomme, diagnosi, riparazione, tuning
+    active: bool = True
+
+class ServiceCreate(BaseModel):
+    name: str
+    description: str
+    estimated_hours: float
+    price_estimate: Optional[float] = None
+    category: str
+
+# Booking Models
+class Booking(BaseModel):
+    booking_id: str = Field(default_factory=lambda: f"book_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    vehicle_id: str
+    service_id: str
+    scheduled_date: datetime
+    status: str = "pending"  # pending, confirmed, rejected, completed, cancelled
+    notes: Optional[str] = None
+    admin_notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BookingCreate(BaseModel):
+    vehicle_id: str
+    service_id: str
+    scheduled_date: datetime
+    notes: Optional[str] = None
+
+class BookingUpdate(BaseModel):
+    status: Optional[str] = None
+    admin_notes: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+
+# Vehicle Status Tracking Models
+class VehicleStatus(BaseModel):
+    status_id: str = Field(default_factory=lambda: f"stat_{uuid.uuid4().hex[:12]}")
+    booking_id: str
+    status: str  # waiting, checked_in, in_progress, testing, ready, delivered
+    notes: Optional[str] = None
+    updated_by: Optional[str] = None  # admin user who updated
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VehicleStatusCreate(BaseModel):
+    booking_id: str
+    status: str
+    notes: Optional[str] = None
+
+# Time Slot Models
+class TimeSlot(BaseModel):
+    date: str
+    time: str
+    available: bool
+
+# Admin Models
+class AdminUser(BaseModel):
+    admin_id: str = Field(default_factory=lambda: f"adm_{uuid.uuid4().hex[:12]}")
+    email: str
+    name: str
+    role: str = "staff"  # staff, manager, admin
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ===================== AUTH HELPERS =====================
+
+async def get_session_token(request: Request) -> Optional[str]:
+    """Extract session token from cookie or Authorization header"""
+    # Try cookie first
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        return session_token
+    
+    # Try Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    
+    return None
+
+async def get_current_user(request: Request) -> User:
+    """Get current authenticated user"""
+    session_token = await get_session_token(request)
+    if not session_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    session = await db.user_sessions.find_one(
+        {"session_token": session_token},
+        {"_id": 0}
+    )
+    
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    
+    # Check expiry with timezone awareness
+    expires_at = session["expires_at"]
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Session expired")
+    
+    user = await db.users.find_one(
+        {"user_id": session["user_id"]},
+        {"_id": 0}
+    )
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    return User(**user)
+
+async def get_optional_user(request: Request) -> Optional[User]:
+    """Get current user if authenticated, None otherwise"""
+    try:
+        return await get_current_user(request)
+    except HTTPException:
+        return None
+
+# ===================== AUTH ROUTES =====================
+
+@api_router.post("/auth/session")
+async def exchange_session(request: Request, response: Response):
+    """Exchange session_id for session_token"""
+    session_id = request.headers.get("X-Session-ID")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Session ID required")
+    
+    # Call Emergent Auth API
+    async with httpx.AsyncClient() as client:
+        try:
+            auth_response = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": session_id}
+            )
+            
+            if auth_response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid session ID")
+            
+            user_data = auth_response.json()
+            
+        except httpx.RequestError as e:
+            logger.error(f"Auth API error: {e}")
+            raise HTTPException(status_code=500, detail="Authentication service error")
+    
+    # Check if user exists
+    existing_user = await db.users.find_one(
+        {"email": user_data["email"]},
+        {"_id": 0}
+    )
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+    else:
+        # Create new user
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        new_user = {
+            "user_id": user_id,
+            "email": user_data["email"],
+            "name": user_data["name"],
+            "picture": user_data.get("picture"),
+            "created_at": datetime.now(timezone.utc),
+            "gdpr_accepted": False,
+            "marketing_accepted": False
+        }
+        await db.users.insert_one(new_user)
+    
+    # Store session
+    session_token = user_data["session_token"]
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    # Get full user data
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    
+    return {
+        "user": user,
+        "session_token": session_token
+    }
+
+@api_router.get("/auth/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Get current user profile"""
+    return current_user
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Logout user"""
+    session_token = await get_session_token(request)
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
+    
+    response.delete_cookie(key="session_token", path="/")
+    return {"message": "Logged out successfully"}
+
+@api_router.put("/auth/gdpr")
+async def update_gdpr(
+    request: Request,
+    gdpr_accepted: bool,
+    marketing_accepted: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Update GDPR consent"""
+    await db.users.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": {
+            "gdpr_accepted": gdpr_accepted,
+            "marketing_accepted": marketing_accepted
+        }}
+    )
+    return {"message": "Preferences updated"}
+
+# ===================== VEHICLE ROUTES =====================
+
+@api_router.get("/vehicles", response_model=List[Vehicle])
+async def get_user_vehicles(current_user: User = Depends(get_current_user)):
+    """Get all vehicles for current user"""
+    vehicles = await db.vehicles.find(
+        {"user_id": current_user.user_id},
+        {"_id": 0}
+    ).to_list(100)
+    return [Vehicle(**v) for v in vehicles]
+
+@api_router.post("/vehicles", response_model=Vehicle)
+async def create_vehicle(
+    vehicle: VehicleCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new vehicle"""
+    new_vehicle = Vehicle(
+        user_id=current_user.user_id,
+        **vehicle.dict()
+    )
+    await db.vehicles.insert_one(new_vehicle.dict())
+    return new_vehicle
+
+@api_router.put("/vehicles/{vehicle_id}", response_model=Vehicle)
+async def update_vehicle(
+    vehicle_id: str,
+    vehicle_update: VehicleUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a vehicle"""
+    existing = await db.vehicles.find_one(
+        {"vehicle_id": vehicle_id, "user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    update_data = {k: v for k, v in vehicle_update.dict().items() if v is not None}
+    if update_data:
+        await db.vehicles.update_one(
+            {"vehicle_id": vehicle_id},
+            {"$set": update_data}
+        )
+    
+    updated = await db.vehicles.find_one({"vehicle_id": vehicle_id}, {"_id": 0})
+    return Vehicle(**updated)
+
+@api_router.delete("/vehicles/{vehicle_id}")
+async def delete_vehicle(
+    vehicle_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a vehicle"""
+    result = await db.vehicles.delete_one(
+        {"vehicle_id": vehicle_id, "user_id": current_user.user_id}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return {"message": "Vehicle deleted"}
+
+# ===================== SERVICE ROUTES =====================
+
+@api_router.get("/services", response_model=List[Service])
+async def get_services():
+    """Get all available services"""
+    services = await db.services.find({"active": True}, {"_id": 0}).to_list(100)
+    return [Service(**s) for s in services]
+
+@api_router.get("/services/{service_id}", response_model=Service)
+async def get_service(service_id: str):
+    """Get a specific service"""
+    service = await db.services.find_one({"service_id": service_id}, {"_id": 0})
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return Service(**service)
+
+# ===================== BOOKING ROUTES =====================
+
+@api_router.get("/bookings", response_model=List[Booking])
+async def get_user_bookings(current_user: User = Depends(get_current_user)):
+    """Get all bookings for current user"""
+    bookings = await db.bookings.find(
+        {"user_id": current_user.user_id},
+        {"_id": 0}
+    ).sort("scheduled_date", -1).to_list(100)
+    return [Booking(**b) for b in bookings]
+
+@api_router.post("/bookings", response_model=Booking)
+async def create_booking(
+    booking: BookingCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new booking"""
+    # Verify vehicle belongs to user
+    vehicle = await db.vehicles.find_one(
+        {"vehicle_id": booking.vehicle_id, "user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Verify service exists
+    service = await db.services.find_one({"service_id": booking.service_id}, {"_id": 0})
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    
+    new_booking = Booking(
+        user_id=current_user.user_id,
+        **booking.dict()
+    )
+    await db.bookings.insert_one(new_booking.dict())
+    
+    # Create initial status
+    initial_status = VehicleStatus(
+        booking_id=new_booking.booking_id,
+        status="waiting",
+        notes="Prenotazione creata"
+    )
+    await db.vehicle_status.insert_one(initial_status.dict())
+    
+    return new_booking
+
+@api_router.get("/bookings/{booking_id}", response_model=Booking)
+async def get_booking(
+    booking_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific booking"""
+    booking = await db.bookings.find_one(
+        {"booking_id": booking_id, "user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return Booking(**booking)
+
+@api_router.delete("/bookings/{booking_id}")
+async def cancel_booking(
+    booking_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Cancel a booking"""
+    booking = await db.bookings.find_one(
+        {"booking_id": booking_id, "user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if booking["status"] not in ["pending", "confirmed"]:
+        raise HTTPException(status_code=400, detail="Cannot cancel this booking")
+    
+    await db.bookings.update_one(
+        {"booking_id": booking_id},
+        {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"message": "Booking cancelled"}
+
+# ===================== TRACKING ROUTES =====================
+
+@api_router.get("/tracking/{booking_id}", response_model=List[VehicleStatus])
+async def get_vehicle_tracking(
+    booking_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get status history for a booking"""
+    # Verify booking belongs to user
+    booking = await db.bookings.find_one(
+        {"booking_id": booking_id, "user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    statuses = await db.vehicle_status.find(
+        {"booking_id": booking_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    
+    return [VehicleStatus(**s) for s in statuses]
+
+@api_router.get("/tracking/current/{booking_id}")
+async def get_current_status(
+    booking_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get current status for a booking"""
+    booking = await db.bookings.find_one(
+        {"booking_id": booking_id, "user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    status = await db.vehicle_status.find_one(
+        {"booking_id": booking_id},
+        {"_id": 0},
+        sort=[("created_at", -1)]
+    )
+    
+    return status
+
+# ===================== AVAILABLE SLOTS =====================
+
+@api_router.get("/slots")
+async def get_available_slots(date: str, service_id: Optional[str] = None):
+    """Get available time slots for a date"""
+    # Parse date
+    try:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Business hours: 8:00 - 18:00, slots every hour
+    slots = []
+    for hour in range(8, 18):
+        slot_time = datetime.combine(target_date, datetime.min.time().replace(hour=hour))
+        slot_time = slot_time.replace(tzinfo=timezone.utc)
+        
+        # Count bookings at this time
+        existing_bookings = await db.bookings.count_documents({
+            "scheduled_date": {
+                "$gte": slot_time,
+                "$lt": slot_time + timedelta(hours=1)
+            },
+            "status": {"$in": ["pending", "confirmed"]}
+        })
+        
+        # Max 3 bookings per slot
+        available = existing_bookings < 3
+        
+        slots.append({
+            "time": f"{hour:02d}:00",
+            "datetime": slot_time.isoformat(),
+            "available": available,
+            "spots_left": max(0, 3 - existing_bookings)
+        })
+    
+    return {"date": date, "slots": slots}
+
+# ===================== ADMIN ROUTES =====================
+
+@api_router.get("/admin/bookings")
+async def admin_get_all_bookings(
+    status: Optional[str] = None,
+    date: Optional[str] = None
+):
+    """Get all bookings (admin)"""
+    query = {}
+    if status:
+        query["status"] = status
+    if date:
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d")
+            query["scheduled_date"] = {
+                "$gte": target_date,
+                "$lt": target_date + timedelta(days=1)
+            }
+        except ValueError:
+            pass
+    
+    bookings = await db.bookings.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(500)
+    
+    # Enrich with user and vehicle info
+    enriched = []
+    for booking in bookings:
+        user = await db.users.find_one({"user_id": booking["user_id"]}, {"_id": 0})
+        vehicle = await db.vehicles.find_one({"vehicle_id": booking["vehicle_id"]}, {"_id": 0})
+        service = await db.services.find_one({"service_id": booking["service_id"]}, {"_id": 0})
+        current_status = await db.vehicle_status.find_one(
+            {"booking_id": booking["booking_id"]},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        
+        enriched.append({
+            **booking,
+            "user": user,
+            "vehicle": vehicle,
+            "service": service,
+            "current_status": current_status["status"] if current_status else "waiting"
+        })
+    
+    return enriched
+
+@api_router.put("/admin/bookings/{booking_id}")
+async def admin_update_booking(
+    booking_id: str,
+    update: BookingUpdate
+):
+    """Update booking status (admin)"""
+    booking = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    update_data = {k: v for k, v in update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.bookings.update_one(
+        {"booking_id": booking_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
+    return Booking(**updated)
+
+@api_router.post("/admin/tracking")
+async def admin_update_vehicle_status(status: VehicleStatusCreate):
+    """Update vehicle status (admin)"""
+    # Verify booking exists
+    booking = await db.bookings.find_one({"booking_id": status.booking_id}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    new_status = VehicleStatus(**status.dict())
+    await db.vehicle_status.insert_one(new_status.dict())
+    
+    # Update booking status based on vehicle status
+    booking_status_map = {
+        "waiting": "confirmed",
+        "checked_in": "confirmed",
+        "in_progress": "confirmed",
+        "testing": "confirmed",
+        "ready": "confirmed",
+        "delivered": "completed"
+    }
+    
+    new_booking_status = booking_status_map.get(status.status)
+    if new_booking_status:
+        await db.bookings.update_one(
+            {"booking_id": status.booking_id},
+            {"$set": {"status": new_booking_status, "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    return new_status
+
+# ===================== INIT DATA =====================
+
+@api_router.post("/init-services")
+async def init_services():
+    """Initialize default services"""
+    default_services = [
+        {
+            "service_id": "srv_tagliando",
+            "name": "Tagliando",
+            "description": "Controllo completo e sostituzione filtri, olio motore",
+            "estimated_hours": 2,
+            "price_estimate": 150,
+            "category": "tagliando",
+            "active": True
+        },
+        {
+            "service_id": "srv_gomme",
+            "name": "Cambio Gomme",
+            "description": "Sostituzione pneumatici stagionali con equilibratura",
+            "estimated_hours": 1,
+            "price_estimate": 60,
+            "category": "gomme",
+            "active": True
+        },
+        {
+            "service_id": "srv_diagnosi",
+            "name": "Diagnosi Elettronica",
+            "description": "Scansione completa centralina e verifica errori",
+            "estimated_hours": 0.5,
+            "price_estimate": 50,
+            "category": "diagnosi",
+            "active": True
+        },
+        {
+            "service_id": "srv_freni",
+            "name": "Revisione Freni",
+            "description": "Controllo e sostituzione pastiglie e dischi freno",
+            "estimated_hours": 2,
+            "price_estimate": 200,
+            "category": "riparazione",
+            "active": True
+        },
+        {
+            "service_id": "srv_clima",
+            "name": "Ricarica Clima",
+            "description": "Ricarica gas climatizzatore e controllo perdite",
+            "estimated_hours": 1,
+            "price_estimate": 80,
+            "category": "riparazione",
+            "active": True
+        },
+        {
+            "service_id": "srv_revisione",
+            "name": "Revisione Auto",
+            "description": "Revisione ministeriale obbligatoria",
+            "estimated_hours": 1,
+            "price_estimate": 80,
+            "category": "tagliando",
+            "active": True
+        }
+    ]
+    
+    for service in default_services:
+        await db.services.update_one(
+            {"service_id": service["service_id"]},
+            {"$set": service},
+            upsert=True
+        )
+    
+    return {"message": f"Initialized {len(default_services)} services"}
+
+# ===================== HEALTH CHECK =====================
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Autofficina Euganea API", "status": "online"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -62,13 +741,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
