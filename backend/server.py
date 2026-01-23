@@ -732,6 +732,19 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
+@api_router.get("/download/manuale")
+async def download_manual():
+    """Download the user manual PDF"""
+    pdf_path = Path("/app/AUTOFFICINA_EUGANEA_Manuale_App.pdf")
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+    return FileResponse(
+        path=pdf_path,
+        filename="AUTOFFICINA_EUGANEA_Manuale_App.pdf",
+        media_type="application/pdf"
+    )
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
