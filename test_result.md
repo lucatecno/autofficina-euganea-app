@@ -301,6 +301,51 @@ frontend:
         agent: "testing"
         comment: "✅ TESTED: Showcase screen working correctly. Header 'I Nostri Lavori' visible, Instagram banner with 'Seguici su Instagram' and '@autofficina_euganea' handle, info text visible, all 4 work cards displayed (Restauro Fiat 500, Tuning Audi RS3, Riparazione carrozzeria BMW, Manutenzione Mercedes AMG), CTA section visible."
 
+  - task: "Bookings Management Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/bookings.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Bookings list with filter tabs and status tracking"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Bookings screen working correctly. Filter tabs (Tutte, Attive, Completate) are visible and clickable, empty state shows 'Nessuna prenotazione' with appropriate message, FAB (Floating Action Button) for adding new bookings is present."
+
+  - task: "Profile Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/profile.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "User profile with settings and logout"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Profile screen working correctly. User info displays 'Mario Rossi' and email 'meccanico@autofficina-euganea.it', menu items 'I Miei Veicoli' and 'Le Mie Prenotazioni' visible, Privacy Policy link present, GDPR section visible, 'Esci' (Logout) button functional."
+
+  - task: "Admin Panel"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/admin.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Admin interface for managing bookings and vehicle status"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Admin panel working correctly. Filter tabs (Oggi, In corso, Tutte) are visible and functional, empty state displays 'Nessuna prenotazione' appropriately, admin interface loads without errors."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
