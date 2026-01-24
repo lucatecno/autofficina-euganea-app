@@ -161,6 +161,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       await AsyncStorage.removeItem('session_token');
       setUser(null);
+      // Redirect to login on web
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     }
   };
 
