@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { COLORS } from '../src/utils/constants';
@@ -32,29 +32,42 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Logo Section */}
+        {/* Logo Section - Branded */}
         <View style={styles.logoSection}>
+          {/* Wrench Icon Container - Mimics logo style */}
           <View style={styles.logoContainer}>
-            <Ionicons name="construct" size={64} color={COLORS.primary} />
+            <View style={styles.wrenchBg}>
+              <MaterialCommunityIcons name="wrench" size={80} color={COLORS.secondary} />
+            </View>
           </View>
-          <Text style={styles.title}>AUTOFFICINA</Text>
-          <Text style={styles.subtitle}>EUGANEA</Text>
+          
+          {/* Brand Name with Logo Style */}
+          <View style={styles.brandContainer}>
+            <Text style={styles.title}>AUTOFFICINA</Text>
+            <Text style={styles.subtitle}>EUGANEA</Text>
+          </View>
           <Text style={styles.tagline}>La tua officina di fiducia</Text>
         </View>
 
         {/* Features */}
         <View style={styles.features}>
           <View style={styles.feature}>
-            <Ionicons name="calendar-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.featureText}>Prenota appuntamenti</Text>
+            <View style={styles.featureIcon}>
+              <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Prenota appuntamenti online</Text>
           </View>
           <View style={styles.feature}>
-            <Ionicons name="locate-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.featureText}>Traccia il tuo veicolo</Text>
+            <View style={styles.featureIcon}>
+              <Ionicons name="locate-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Traccia il tuo veicolo in tempo reale</Text>
           </View>
           <View style={styles.feature}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.featureText}>Ricevi aggiornamenti</Text>
+            <View style={styles.featureIcon}>
+              <Ionicons name="notifications-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Ricevi aggiornamenti istantanei</Text>
           </View>
         </View>
 
