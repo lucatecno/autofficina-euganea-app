@@ -11,6 +11,9 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,6 +22,15 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Email Configuration (Mock mode by default - set SMTP_* env vars for real emails)
+SMTP_HOST = os.environ.get('SMTP_HOST', '')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+SMTP_USER = os.environ.get('SMTP_USER', '')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+OFFICINA_EMAIL = os.environ.get('OFFICINA_EMAIL', 'autofficinaeuganea@libero.it')
+OFFICINA_PHONE = os.environ.get('OFFICINA_PHONE', '+393203145049')
+EMAIL_MOCK_MODE = not all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD])
 
 # Create the main app
 app = FastAPI(title="Autofficina Euganea API")
