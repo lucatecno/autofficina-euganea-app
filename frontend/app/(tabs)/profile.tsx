@@ -83,6 +83,34 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Contatti</Text>
+
+          <TouchableOpacity style={styles.menuItem} onPress={openWhatsApp}>
+            <View style={[styles.menuIcon, { backgroundColor: '#25D366' + '20' }]}>
+              <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+            </View>
+            <Text style={styles.menuText}>WhatsApp</Text>
+            <Text style={styles.menuSubtext}>+39 320 314 5049</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL(`tel:${PHONE_NUMBER}`)}>
+            <View style={styles.menuIcon}>
+              <Ionicons name="call" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.menuText}>Telefono</Text>
+            <Text style={styles.menuSubtext}>+39 320 314 5049</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL(`mailto:${EMAIL}`)}>
+            <View style={styles.menuIcon}>
+              <Ionicons name="mail" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.menuText}>Email</Text>
+            <Text style={styles.menuSubtext}>{EMAIL}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informazioni</Text>
 
           <TouchableOpacity style={styles.menuItem} onPress={openPrivacyPolicy}>
@@ -91,14 +119,6 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.menuText}>Privacy Policy</Text>
             <Ionicons name="open-outline" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => Linking.openURL('tel:+390491234567')}>
-            <View style={styles.menuIcon}>
-              <Ionicons name="call" size={20} color={COLORS.primary} />
-            </View>
-            <Text style={styles.menuText}>Contattaci</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
         </View>
 
