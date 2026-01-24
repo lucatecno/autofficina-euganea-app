@@ -581,6 +581,29 @@ async def update_gdpr(
     )
     return {"message": "Preferences updated"}
 
+# ===================== CONTACT INFO =====================
+
+@api_router.get("/contact-info")
+async def get_contact_info():
+    """Get officina contact information"""
+    return {
+        "name": "Autofficina Euganea",
+        "email": OFFICINA_EMAIL,
+        "phone": OFFICINA_PHONE,
+        "whatsapp": f"https://wa.me/393203145049",
+        "whatsapp_number": "+39 320 314 5049",
+        "address": "Via Example 123, Padova",
+        "hours": {
+            "weekdays": "Lun-Ven: 8:00 - 18:00",
+            "saturday": "Sab: 8:00 - 12:00",
+            "sunday": "Dom: Chiuso"
+        },
+        "social": {
+            "instagram": "@autofficina_euganea"
+        },
+        "email_mode": "mock" if EMAIL_MOCK_MODE else "live"
+    }
+
 # ===================== VEHICLE ROUTES =====================
 
 @api_router.get("/vehicles", response_model=List[Vehicle])
