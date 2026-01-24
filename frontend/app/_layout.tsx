@@ -20,6 +20,8 @@ export default function RootLayout() {
           contentStyle: {
             backgroundColor: COLORS.background,
           },
+          headerBackTitle: 'Indietro',
+          headerBackTitleVisible: true,
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -29,6 +31,7 @@ export default function RootLayout() {
           options={{ 
             title: 'Nuova Prenotazione',
             presentation: 'modal',
+            headerLeft: undefined,
           }} 
         />
         <Stack.Screen 
@@ -42,6 +45,7 @@ export default function RootLayout() {
           options={{ 
             title: 'Aggiungi Veicolo',
             presentation: 'modal',
+            headerLeft: undefined,
           }} 
         />
         <Stack.Screen 
@@ -49,6 +53,7 @@ export default function RootLayout() {
           options={{ 
             title: 'Modifica Veicolo',
             presentation: 'modal',
+            headerLeft: undefined,
           }} 
         />
         <Stack.Screen 
