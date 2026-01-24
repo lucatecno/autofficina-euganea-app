@@ -232,7 +232,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.infoRow}>
               <Ionicons name="time" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>Lun-Ven: 8:00 - 18:00 | Sab: 8:00 - 12:00</Text>
+              <Text style={styles.infoText}>Lun-Ven: 8:00 - 19:00 | Sab: 8:00 - 12:00</Text>
             </View>
             <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(`tel:${PHONE_NUMBER}`)}>
               <Ionicons name="call" size={20} color={COLORS.primary} />
