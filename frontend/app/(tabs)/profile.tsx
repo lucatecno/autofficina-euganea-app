@@ -25,18 +25,27 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Sei sicuro di voler uscire?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Esci',
-          style: 'destructive',
-          onPress: logout,
-        },
-      ]
-    );
+    if (Platform.OS === 'web') {
+      // Web: use confirm dialog
+      const confirmed = window.confirm('Sei sicuro di voler uscire?');
+      if (confirmed) {
+        logout();
+      }
+    } else {
+      // Native: use Alert
+      Alert.alert(
+        'Logout',
+        'Sei sicuro di voler uscire?',
+        [
+          { text: 'Annulla', style: 'cancel' },
+          {
+            text: 'Esci',
+            style: 'destructive',
+            onPress: logout,
+          },
+        ]
+      );
+    }
   };
 
   const openPrivacyPolicy = () => {
