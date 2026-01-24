@@ -924,6 +924,7 @@ async def admin_update_booking(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
+    old_status = booking.get("status")
     update_data = {k: v for k, v in update.dict().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     
@@ -931,6 +932,14 @@ async def admin_update_booking(
         {"booking_id": booking_id},
         {"$set": update_data}
     )
+    
+    # Send confirmation email if status changed to confirmed
+    if update.status == "confirmed" and old_status != "confirmed":
+        user = await db.users.find_one({"user_id": booking["user_id"]}, {"_id": 0})
+        vehicle = await db.vehicles.find_one({"vehicle_id": booking["vehicle_id"]}, {"_id": 0})
+        service = await db.services.find_one({"service_id": booking["service_id"]}, {"_id": 0})
+        if user and vehicle and service:
+            await send_booking_confirmation_to_customer(booking, user, vehicle, service)
     
     updated = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
     return Booking(**updated)
@@ -962,6 +971,12 @@ async def admin_update_vehicle_status(status: VehicleStatusCreate):
             {"booking_id": status.booking_id},
             {"$set": {"status": new_booking_status, "updated_at": datetime.now(timezone.utc)}}
         )
+    
+    # Send status update email to customer
+    user = await db.users.find_one({"user_id": booking["user_id"]}, {"_id": 0})
+    vehicle = await db.vehicles.find_one({"vehicle_id": booking["vehicle_id"]}, {"_id": 0})
+    if user and vehicle:
+        await send_status_update_to_customer(booking, user, vehicle, status.status)
     
     return new_status
 
