@@ -237,6 +237,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
   },
+  menuSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginRight: 8,
+  },
   gdprCard: {
     backgroundColor: COLORS.surface,
     borderRadius: 12,
