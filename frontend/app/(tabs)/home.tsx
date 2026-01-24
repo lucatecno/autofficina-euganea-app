@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,11 @@ import { bookingsAPI, vehiclesAPI, servicesAPI, trackingAPI } from '../../src/se
 import { Booking, Vehicle, Service, VehicleStatus } from '../../src/types';
 import { BookingCard } from '../../src/components';
 import { COLORS, STATUS_LABELS, STATUS_COLORS } from '../../src/utils/constants';
+
+// Contact info
+const WHATSAPP_NUMBER = '393203145049';
+const PHONE_NUMBER = '+393203145049';
+const EMAIL = 'autofficinaeuganea@libero.it';
 
 export default function HomeScreen() {
   const { user } = useAuth();
