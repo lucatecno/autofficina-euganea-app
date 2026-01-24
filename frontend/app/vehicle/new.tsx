@@ -56,8 +56,16 @@ export default function NewVehicleScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
+        {/* Header with close button */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Aggiungi Veicolo</Text>
+          <View style={styles.closeButton} />
+        </View>
+
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-          <Text style={styles.title}>Aggiungi Veicolo</Text>
           <Text style={styles.subtitle}>
             Inserisci i dati del tuo veicolo per velocizzare le prenotazioni future.
           </Text>
