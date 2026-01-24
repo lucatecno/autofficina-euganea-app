@@ -578,24 +578,44 @@ async def admin_get_all_bookings(
     
     bookings = await db.bookings.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(500)
     
-    # Enrich with user and vehicle info
+    if not bookings:
+        return []
+    
+    # Optimized: Batch fetch all related data to avoid N+1 queries
+    user_ids = list(set(b["user_id"] for b in bookings))
+    vehicle_ids = list(set(b["vehicle_id"] for b in bookings))
+    service_ids = list(set(b["service_id"] for b in bookings))
+    booking_ids = [b["booking_id"] for b in bookings]
+    
+    # Fetch all data in 4 queries instead of N*4
+    users_list = await db.users.find({"user_id": {"$in": user_ids}}, {"_id": 0}).to_list(None)
+    users = {u["user_id"]: u for u in users_list}
+    
+    vehicles_list = await db.vehicles.find({"vehicle_id": {"$in": vehicle_ids}}, {"_id": 0}).to_list(None)
+    vehicles = {v["vehicle_id"]: v for v in vehicles_list}
+    
+    services_list = await db.services.find({"service_id": {"$in": service_ids}}, {"_id": 0}).to_list(None)
+    services = {s["service_id"]: s for s in services_list}
+    
+    # Get latest status for each booking
+    statuses = {}
+    statuses_list = await db.vehicle_status.find(
+        {"booking_id": {"$in": booking_ids}}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(None)
+    for status_doc in statuses_list:
+        if status_doc["booking_id"] not in statuses:
+            statuses[status_doc["booking_id"]] = status_doc
+    
+    # Build enriched list using lookups
     enriched = []
     for booking in bookings:
-        user = await db.users.find_one({"user_id": booking["user_id"]}, {"_id": 0})
-        vehicle = await db.vehicles.find_one({"vehicle_id": booking["vehicle_id"]}, {"_id": 0})
-        service = await db.services.find_one({"service_id": booking["service_id"]}, {"_id": 0})
-        current_status = await db.vehicle_status.find_one(
-            {"booking_id": booking["booking_id"]},
-            {"_id": 0},
-            sort=[("created_at", -1)]
-        )
-        
         enriched.append({
             **booking,
-            "user": user,
-            "vehicle": vehicle,
-            "service": service,
-            "current_status": current_status["status"] if current_status else "waiting"
+            "user": users.get(booking["user_id"]),
+            "vehicle": vehicles.get(booking["vehicle_id"]),
+            "service": services.get(booking["service_id"]),
+            "current_status": statuses.get(booking["booking_id"], {}).get("status", "waiting")
         })
     
     return enriched
