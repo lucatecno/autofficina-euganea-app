@@ -228,7 +228,7 @@ export default function HomeScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Ionicons name="location" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>Via Example 123, Padova</Text>
+              <Text style={styles.infoText}>Via Galzignanese 14/A, Battaglia Terme (PD)</Text>
             </View>
             <View style={styles.infoRow}>
               <Ionicons name="time" size={20} color={COLORS.primary} />
