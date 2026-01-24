@@ -30,7 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined' && window.location) {
         return window.location.origin + '/';
       }
-      return `${BACKEND_URL}/`;
+      // Fallback should not happen on web, but handle gracefully
+      console.error('window.location not available on web platform');
+      return '/';
     }
     return Linking.createURL('/');
   };
