@@ -26,6 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Get redirect URL based on platform
   const getRedirectUrl = () => {
     if (Platform.OS === 'web') {
+      // Use window.location.origin for proper OAuth redirect across all domains
+      if (typeof window !== 'undefined' && window.location) {
+        return window.location.origin + '/';
+      }
       return `${BACKEND_URL}/`;
     }
     return Linking.createURL('/');
