@@ -45,6 +45,261 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ===================== EMAIL SERVICE =====================
+
+async def send_email(to_email: str, subject: str, html_content: str, text_content: str = None):
+    """
+    Send email - Mock mode logs to console, Real mode sends via SMTP
+    To enable real email, set these env vars:
+    - SMTP_HOST (e.g., smtp.libero.it)
+    - SMTP_PORT (e.g., 587)
+    - SMTP_USER (e.g., autofficinaeuganea@libero.it)
+    - SMTP_PASSWORD (app password)
+    """
+    if EMAIL_MOCK_MODE:
+        # Mock mode - log email details
+        logger.info(f"""
+========== EMAIL MOCK (would be sent) ==========
+TO: {to_email}
+SUBJECT: {subject}
+CONTENT:
+{text_content or html_content}
+================================================
+        """)
+        # Store in database for review
+        await db.email_logs.insert_one({
+            "to": to_email,
+            "subject": subject,
+            "html_content": html_content,
+            "text_content": text_content,
+            "status": "mock_logged",
+            "created_at": datetime.now(timezone.utc)
+        })
+        return True
+    else:
+        # Real SMTP mode
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = SMTP_USER
+            msg['To'] = to_email
+            
+            if text_content:
+                msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
+            msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+            
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASSWORD)
+                server.send_message(msg)
+            
+            await db.email_logs.insert_one({
+                "to": to_email,
+                "subject": subject,
+                "status": "sent",
+                "created_at": datetime.now(timezone.utc)
+            })
+            logger.info(f"Email sent to {to_email}: {subject}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send email: {e}")
+            await db.email_logs.insert_one({
+                "to": to_email,
+                "subject": subject,
+                "status": "failed",
+                "error": str(e),
+                "created_at": datetime.now(timezone.utc)
+            })
+            return False
+
+async def send_booking_confirmation_to_customer(booking: dict, user: dict, vehicle: dict, service: dict):
+    """Send booking confirmation email to customer"""
+    scheduled = datetime.fromisoformat(str(booking['scheduled_date']).replace('Z', '+00:00'))
+    date_str = scheduled.strftime("%d/%m/%Y alle ore %H:%M")
+    
+    subject = f"✅ Prenotazione Confermata - Autofficina Euganea"
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #E53935; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">🔧 AUTOFFICINA EUGANEA</h1>
+        </div>
+        <div style="padding: 20px; background: #f5f5f5;">
+            <h2 style="color: #333;">Ciao {user['name']}!</h2>
+            <p>La tua prenotazione è stata <strong style="color: #4CAF50;">confermata</strong>.</p>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #E53935; margin-top: 0;">📋 Dettagli Prenotazione</h3>
+                <p><strong>Servizio:</strong> {service['name']}</p>
+                <p><strong>Veicolo:</strong> {vehicle['marca']} {vehicle['modello']} ({vehicle['targa']})</p>
+                <p><strong>Data:</strong> {date_str}</p>
+                <p><strong>Durata stimata:</strong> ~{service['estimated_hours']} ore</p>
+                {f"<p><strong>Preventivo:</strong> da €{service['price_estimate']}</p>" if service.get('price_estimate') else ""}
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <h3 style="color: #E53935; margin-top: 0;">📍 Dove Trovarci</h3>
+                <p><strong>Indirizzo:</strong> Via Example 123, Padova</p>
+                <p><strong>Telefono:</strong> {OFFICINA_PHONE}</p>
+                <p><strong>WhatsApp:</strong> <a href="https://wa.me/393203145049">Contattaci su WhatsApp</a></p>
+            </div>
+            
+            <p style="margin-top: 20px; color: #666;">
+                Puoi monitorare lo stato del tuo veicolo direttamente dall'app!
+            </p>
+        </div>
+        <div style="background: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+            <p>Autofficina Euganea - La tua officina di fiducia</p>
+            <p>{OFFICINA_EMAIL}</p>
+        </div>
+    </div>
+    """
+    
+    text_content = f"""
+AUTOFFICINA EUGANEA - Prenotazione Confermata
+
+Ciao {user['name']}!
+
+La tua prenotazione è stata confermata.
+
+DETTAGLI:
+- Servizio: {service['name']}
+- Veicolo: {vehicle['marca']} {vehicle['modello']} ({vehicle['targa']})
+- Data: {date_str}
+- Durata stimata: ~{service['estimated_hours']} ore
+
+DOVE TROVARCI:
+- Indirizzo: Via Example 123, Padova
+- Telefono: {OFFICINA_PHONE}
+- Email: {OFFICINA_EMAIL}
+
+Puoi monitorare lo stato del tuo veicolo direttamente dall'app!
+
+Autofficina Euganea - La tua officina di fiducia
+    """
+    
+    await send_email(user['email'], subject, html_content, text_content)
+
+async def send_booking_notification_to_officina(booking: dict, user: dict, vehicle: dict, service: dict):
+    """Send new booking notification to officina"""
+    scheduled = datetime.fromisoformat(str(booking['scheduled_date']).replace('Z', '+00:00'))
+    date_str = scheduled.strftime("%d/%m/%Y alle ore %H:%M")
+    
+    subject = f"🆕 Nuova Prenotazione - {user['name']} - {service['name']}"
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #E53935; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">🔧 NUOVA PRENOTAZIONE</h1>
+        </div>
+        <div style="padding: 20px; background: #f5f5f5;">
+            <h2 style="color: #333;">Nuova richiesta di prenotazione!</h2>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #E53935; margin-top: 0;">👤 Cliente</h3>
+                <p><strong>Nome:</strong> {user['name']}</p>
+                <p><strong>Email:</strong> {user['email']}</p>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #E53935; margin-top: 0;">🚗 Veicolo</h3>
+                <p><strong>Marca/Modello:</strong> {vehicle['marca']} {vehicle['modello']}</p>
+                <p><strong>Targa:</strong> {vehicle['targa']}</p>
+                {f"<p><strong>Anno:</strong> {vehicle.get('anno')}</p>" if vehicle.get('anno') else ""}
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #E53935; margin-top: 0;">📋 Intervento</h3>
+                <p><strong>Servizio:</strong> {service['name']}</p>
+                <p><strong>Data richiesta:</strong> {date_str}</p>
+                <p><strong>Durata stimata:</strong> ~{service['estimated_hours']} ore</p>
+                {f"<p><strong>Note cliente:</strong> {booking.get('notes')}</p>" if booking.get('notes') else ""}
+            </div>
+            
+            <p style="margin-top: 20px;">
+                <a href="https://workshop-connect.preview.emergentagent.com/admin" 
+                   style="background: #E53935; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                    Gestisci Prenotazione
+                </a>
+            </p>
+        </div>
+    </div>
+    """
+    
+    text_content = f"""
+NUOVA PRENOTAZIONE
+
+Cliente: {user['name']} ({user['email']})
+Veicolo: {vehicle['marca']} {vehicle['modello']} - {vehicle['targa']}
+Servizio: {service['name']}
+Data: {date_str}
+Note: {booking.get('notes', 'Nessuna')}
+
+Gestisci su: https://workshop-connect.preview.emergentagent.com/admin
+    """
+    
+    await send_email(OFFICINA_EMAIL, subject, html_content, text_content)
+
+async def send_status_update_to_customer(booking: dict, user: dict, vehicle: dict, new_status: str):
+    """Send status update email to customer"""
+    status_labels = {
+        'waiting': 'In attesa di consegna',
+        'checked_in': 'Check-in effettuato',
+        'in_progress': 'In lavorazione',
+        'testing': 'In fase di collaudo',
+        'ready': 'Pronto al ritiro! 🎉',
+        'delivered': 'Consegnato'
+    }
+    
+    status_label = status_labels.get(new_status, new_status)
+    
+    subject = f"🚗 Aggiornamento Veicolo: {status_label} - Autofficina Euganea"
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #E53935; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0;">🔧 AUTOFFICINA EUGANEA</h1>
+        </div>
+        <div style="padding: 20px; background: #f5f5f5;">
+            <h2 style="color: #333;">Ciao {user['name']}!</h2>
+            <p>Aggiornamento sul tuo veicolo:</p>
+            
+            <div style="background: {'#4CAF50' if new_status == 'ready' else '#2196F3'}; color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <h2 style="margin: 0;">{status_label}</h2>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+                <p><strong>Veicolo:</strong> {vehicle['marca']} {vehicle['modello']} ({vehicle['targa']})</p>
+            </div>
+            
+            {"<p style='color: #4CAF50; font-size: 18px; text-align: center;'><strong>Puoi venire a ritirare il tuo veicolo!</strong></p>" if new_status == 'ready' else ""}
+            
+            <p style="margin-top: 20px; color: #666;">
+                Per qualsiasi domanda contattaci su WhatsApp: <a href="https://wa.me/393203145049">{OFFICINA_PHONE}</a>
+            </p>
+        </div>
+        <div style="background: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+            <p>Autofficina Euganea - {OFFICINA_EMAIL}</p>
+        </div>
+    </div>
+    """
+    
+    text_content = f"""
+AUTOFFICINA EUGANEA - Aggiornamento Veicolo
+
+Ciao {user['name']}!
+
+Stato attuale: {status_label}
+Veicolo: {vehicle['marca']} {vehicle['modello']} ({vehicle['targa']})
+
+{"Puoi venire a ritirare il tuo veicolo!" if new_status == 'ready' else ""}
+
+Contattaci: {OFFICINA_PHONE}
+Email: {OFFICINA_EMAIL}
+    """
+    
+    await send_email(user['email'], subject, html_content, text_content)
+
 # ===================== MODELS =====================
 
 # Auth Models
