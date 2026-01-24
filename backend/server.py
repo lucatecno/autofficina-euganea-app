@@ -139,7 +139,7 @@ async def send_booking_confirmation_to_customer(booking: dict, user: dict, vehic
             
             <div style="background: white; padding: 15px; border-radius: 8px;">
                 <h3 style="color: #E53935; margin-top: 0;">📍 Dove Trovarci</h3>
-                <p><strong>Indirizzo:</strong> Via Example 123, Padova</p>
+                <p><strong>Indirizzo:</strong> Via Galzignanese 14/A, Battaglia Terme (PD)</p>
                 <p><strong>Telefono:</strong> {OFFICINA_PHONE}</p>
                 <p><strong>WhatsApp:</strong> <a href="https://wa.me/393203145049">Contattaci su WhatsApp</a></p>
             </div>
