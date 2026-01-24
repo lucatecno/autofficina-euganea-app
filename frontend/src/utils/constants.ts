@@ -1,24 +1,43 @@
-// Brand Colors
+// Brand Colors - AUTOFFICINA EUGANEA
+// Based on official logo: Red text outline, metallic wrench, white text
 export const COLORS = {
-  primary: '#E53935',      // Red from logo
-  primaryDark: '#C62828',
-  primaryLight: '#FF6F60',
-  secondary: '#757575',    // Metallic gray
-  secondaryDark: '#494949',
-  secondaryLight: '#A4A4A4',
-  background: '#121212',
-  surface: '#1E1E1E',
-  surfaceLight: '#2C2C2C',
+  // Primary: Deep Red from logo text outline
+  primary: '#C10000',
+  primaryDark: '#8B0000',
+  primaryLight: '#E53935',
+  
+  // Secondary: Metallic Gray from wrench
+  secondary: '#A9A9A9',
+  secondaryDark: '#5C5C5C',
+  secondaryLight: '#D3D3D3',
+  
+  // Backgrounds - Dark theme for professional look
+  background: '#1A1A1A',
+  surface: '#252525',
+  surfaceLight: '#333333',
+  
+  // Text
   text: '#FFFFFF',
   textSecondary: '#B0B0B0',
   textMuted: '#757575',
+  
+  // Semantic Colors
   success: '#4CAF50',
   warning: '#FF9800',
   error: '#F44336',
   info: '#2196F3',
+  
+  // Base
   white: '#FFFFFF',
   black: '#000000',
-  border: '#333333',
+  border: '#404040',
+  
+  // Metallic gradient colors (for special effects)
+  metallic: {
+    light: '#D3D3D3',
+    mid: '#A9A9A9',
+    dark: '#5C5C5C',
+  },
 };
 
 // Status Labels in Italian
