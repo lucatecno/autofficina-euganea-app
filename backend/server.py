@@ -169,7 +169,7 @@ DETTAGLI:
 - Durata stimata: ~{service['estimated_hours']} ore
 
 DOVE TROVARCI:
-- Indirizzo: Via Example 123, Padova
+- Indirizzo: Via Galzignanese 14/A, Battaglia Terme (PD)
 - Telefono: {OFFICINA_PHONE}
 - Email: {OFFICINA_EMAIL}
 
