@@ -592,7 +592,7 @@ async def get_contact_info():
         "phone": OFFICINA_PHONE,
         "whatsapp": f"https://wa.me/393203145049",
         "whatsapp_number": "+39 320 314 5049",
-        "address": "Via Example 123, Padova",
+        "address": "Via Galzignanese 14/A, Battaglia Terme (PD)",
         "hours": {
             "weekdays": "Lun-Ven: 8:00 - 18:00",
             "saturday": "Sab: 8:00 - 12:00",
