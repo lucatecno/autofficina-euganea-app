@@ -15,6 +15,11 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { COLORS } from '../../src/utils/constants';
 import { Button } from '../../src/components';
 
+// Contact info
+const WHATSAPP_NUMBER = '393203145049';
+const PHONE_NUMBER = '+393203145049';
+const EMAIL = 'autofficinaeuganea@libero.it';
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -36,6 +41,10 @@ export default function ProfileScreen() {
 
   const openPrivacyPolicy = () => {
     Linking.openURL('https://www.iubenda.com/privacy-policy/example');
+  };
+
+  const openWhatsApp = () => {
+    Linking.openURL(`https://wa.me/${WHATSAPP_NUMBER}?text=Ciao! Vorrei informazioni sui vostri servizi.`);
   };
 
   return (
