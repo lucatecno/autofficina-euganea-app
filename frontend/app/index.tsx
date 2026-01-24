@@ -155,17 +155,28 @@ const styles = StyleSheet.create({
   features: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
-    padding: 24,
-    gap: 20,
+    padding: 20,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
+  },
+  featureIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   featureText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.text,
+    flex: 1,
   },
   loginSection: {
     alignItems: 'center',
@@ -187,10 +198,10 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   disclaimer: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textMuted,
     textAlign: 'center',
     marginTop: 16,
-    lineHeight: 18,
+    lineHeight: 16,
   },
 });
