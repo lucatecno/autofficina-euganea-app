@@ -212,6 +212,17 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* WhatsApp Button */}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.whatsappButton}
+            onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP_NUMBER}?text=Ciao! Vorrei informazioni sui vostri servizi.`)}
+          >
+            <Ionicons name="logo-whatsapp" size={24} color="#FFFFFF" />
+            <Text style={styles.whatsappText}>Contattaci su WhatsApp</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Info Card */}
         <View style={styles.section}>
           <View style={styles.infoCard}>
@@ -223,10 +234,14 @@ export default function HomeScreen() {
               <Ionicons name="time" size={20} color={COLORS.primary} />
               <Text style={styles.infoText}>Lun-Ven: 8:00 - 18:00 | Sab: 8:00 - 12:00</Text>
             </View>
-            <View style={styles.infoRow}>
+            <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(`tel:${PHONE_NUMBER}`)}>
               <Ionicons name="call" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>049 123 4567</Text>
-            </View>
+              <Text style={[styles.infoText, { color: COLORS.primary }]}>+39 320 314 5049</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(`mailto:${EMAIL}`)}>
+              <Ionicons name="mail" size={20} color={COLORS.primary} />
+              <Text style={[styles.infoText, { color: COLORS.primary }]}>{EMAIL}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
