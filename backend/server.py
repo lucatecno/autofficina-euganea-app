@@ -594,7 +594,7 @@ async def get_contact_info():
         "whatsapp_number": "+39 320 314 5049",
         "address": "Via Galzignanese 14/A, Battaglia Terme (PD)",
         "hours": {
-            "weekdays": "Lun-Ven: 8:00 - 18:00",
+            "weekdays": "Lun-Ven: 8:00 - 19:00",
             "saturday": "Sab: 8:00 - 12:00",
             "sunday": "Dom: Chiuso"
         },
