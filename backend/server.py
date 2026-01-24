@@ -725,6 +725,10 @@ async def create_booking(
     )
     await db.vehicle_status.insert_one(initial_status.dict())
     
+    # Send email notification to officina
+    user_dict = current_user.dict()
+    await send_booking_notification_to_officina(new_booking.dict(), user_dict, vehicle, service)
+    
     return new_booking
 
 @api_router.get("/bookings/{booking_id}", response_model=Booking)
