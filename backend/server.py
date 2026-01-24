@@ -220,7 +220,7 @@ async def send_booking_notification_to_officina(booking: dict, user: dict, vehic
             </div>
             
             <p style="margin-top: 20px;">
-                <a href="https://workshop-connect.preview.emergentagent.com/admin" 
+                <a href="{APP_URL}/admin" 
                    style="background: #E53935; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
                     Gestisci Prenotazione
                 </a>
@@ -238,7 +238,7 @@ Servizio: {service['name']}
 Data: {date_str}
 Note: {booking.get('notes', 'Nessuna')}
 
-Gestisci su: https://workshop-connect.preview.emergentagent.com/admin
+Gestisci su: {APP_URL}/admin
     """
     
     await send_email(OFFICINA_EMAIL, subject, html_content, text_content)
