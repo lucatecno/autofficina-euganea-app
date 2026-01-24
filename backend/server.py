@@ -822,9 +822,9 @@ async def get_available_slots(date: str, service_id: Optional[str] = None):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     
-    # Business hours: 8:00 - 18:00, slots every hour
+    # Business hours: 8:00 - 19:00, slots every hour
     slots = []
-    for hour in range(8, 18):
+    for hour in range(8, 19):
         slot_time = datetime.combine(target_date, datetime.min.time().replace(hour=hour))
         slot_time = slot_time.replace(tzinfo=timezone.utc)
         
