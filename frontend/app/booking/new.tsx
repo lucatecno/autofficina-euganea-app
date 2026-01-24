@@ -154,6 +154,15 @@ export default function NewBookingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
+        {/* Header with close button */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+            <Ionicons name="close" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Nuova Prenotazione</Text>
+          <View style={styles.headerButton} />
+        </View>
+
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
           {[1, 2, 3, 4].map((s) => (
