@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # App URL for emails and links
-APP_URL = os.environ.get('APP_URL', 'https://workshop-connect.preview.emergentagent.com')
+APP_URL = os.environ.get('APP_URL', 'https://autotrack-app-1.preview.emergentagent.com')
 
 # Email Configuration (Mock mode by default - set SMTP_* env vars for real emails)
 SMTP_HOST = os.environ.get('SMTP_HOST', '')

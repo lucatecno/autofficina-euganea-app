@@ -164,7 +164,7 @@ def create_pdf():
         story.append(Paragraph(f, bullet_style))
     
     story.append(Spacer(1, 0.5*cm))
-    story.append(Paragraph("<b>Link App:</b> https://workshop-connect.preview.emergentagent.com", info_style))
+    story.append(Paragraph("<b>Link App:</b> https://autotrack-app-1.preview.emergentagent.com", info_style))
     
     # === 2. ACCESSO ===
     story.append(Paragraph("2. ACCESSO ALL'APP", heading1_style))
@@ -379,7 +379,7 @@ def create_pdf():
         body_style
     ))
     
-    story.append(Paragraph("<b>Accesso:</b> https://workshop-connect.preview.emergentagent.com/admin", info_style))
+    story.append(Paragraph("<b>Accesso:</b> https://autotrack-app-1.preview.emergentagent.com/admin", info_style))
     
     story.append(Paragraph("<b>Funzioni Admin:</b>", heading2_style))
     admin_features = [

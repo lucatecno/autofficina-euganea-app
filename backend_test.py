@@ -11,7 +11,7 @@ import sys
 import os
 
 # Get backend URL from frontend env
-BACKEND_URL = "https://workshop-connect.preview.emergentagent.com"
+BACKEND_URL = "https://autotrack-app-1.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 class BackendTester:
