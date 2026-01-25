@@ -49,10 +49,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "autofficina-euganea"
-      }
+      "router": {}
     }
   }
 }
