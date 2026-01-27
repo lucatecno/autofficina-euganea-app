@@ -591,6 +591,106 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
+
+@api_router.post("/auth/register")
+async def register_user(user_data: UserRegister, response: Response):
+    """Register a new user with email and password"""
+    # Check if user already exists
+    existing = await db.users.find_one({"email": user_data.email.lower()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email già registrata")
+    
+    # Validate password strength
+    if len(user_data.password) < 6:
+        raise HTTPException(status_code=400, detail="La password deve essere di almeno 6 caratteri")
+    
+    # Create user
+    user_id = f"usr_{uuid.uuid4().hex[:12]}"
+    hashed_password = get_password_hash(user_data.password)
+    
+    new_user = {
+        "user_id": user_id,
+        "email": user_data.email.lower(),
+        "name": user_data.name,
+        "password_hash": hashed_password,
+        "phone": user_data.phone,
+        "auth_method": "email",  # email or google
+        "created_at": datetime.now(timezone.utc),
+        "gdpr_accepted": True,
+        "marketing_accepted": False
+    }
+    
+    await db.users.insert_one(new_user)
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    await db.user_sessions.insert_one({
+        "session_token": session_token,
+        "user_id": user_id,
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=7)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=7 * 24 * 60 * 60,
+        samesite="lax"
+    )
+    
+    # Return user data (without password hash)
+    user_response = {k: v for k, v in new_user.items() if k != 'password_hash'}
+    
+    return {
+        "user": user_response,
+        "session_token": session_token
+    }
+
+@api_router.post("/auth/login")
+async def login_user(credentials: UserLogin, response: Response):
+    """Login with email and password"""
+    # Find user
+    user = await db.users.find_one({"email": credentials.email.lower()})
+    if not user:
+        raise HTTPException(status_code=401, detail="Email o password errati")
+    
+    # Check if user has password (not Google-only account)
+    if "password_hash" not in user:
+        raise HTTPException(status_code=400, detail="Questo account usa Google Login")
+    
+    # Verify password
+    if not verify_password(credentials.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email o password errati")
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    await db.user_sessions.insert_one({
+        "session_token": session_token,
+        "user_id": user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=7)
+    })
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=7 * 24 * 60 * 60,
+        samesite="lax"
+    )
+    
+    # Return user data (without password hash)
+    user_response = {k: v for k, v in user.items() if k not in ['password_hash', '_id']}
+    
+    return {
+        "user": user_response,
+        "session_token": session_token
+    }
+
+
 @api_router.put("/auth/gdpr")
 async def update_gdpr(
     request: Request,
