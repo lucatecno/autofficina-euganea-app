@@ -24,6 +24,7 @@ const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function LoginScreen() {
   const { isAuthenticated, isLoading, login, setUser, user } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState<'choice' | 'login' | 'register'>('choice');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
