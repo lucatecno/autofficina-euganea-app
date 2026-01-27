@@ -17,7 +17,10 @@ import { Redirect } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { COLORS } from '../src/utils/constants';
 import { Button } from '../src/components';
-import api from '../src/services/api';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function LoginScreen() {
   const { isAuthenticated, isLoading, login, setUser } = useAuth();
