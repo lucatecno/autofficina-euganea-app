@@ -321,6 +321,17 @@ class UserCreate(BaseModel):
     name: str
     picture: Optional[str] = None
 
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 class SessionDataResponse(BaseModel):
     id: str
     email: str
