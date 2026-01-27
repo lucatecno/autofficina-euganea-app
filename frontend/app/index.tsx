@@ -17,9 +17,75 @@ import { Redirect } from 'expo-router';
 import { useAuth } from '../src/contexts/AuthContext';
 import { COLORS } from '../src/utils/constants';
 import { Button } from '../src/components';
+import api from '../src/services/api';
 
 export default function LoginScreen() {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, login, setUser } = useAuth();
+  const [mode, setMode] = useState<'choice' | 'login' | 'register'>('choice');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleEmailLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Errore', 'Inserisci email e password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/api/auth/login', {
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+      });
+      
+      if (response.data.user) {
+        setUser(response.data.user);
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const message = error.response?.data?.detail || 'Email o password errati';
+      Alert.alert('Errore', message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailRegister = async () => {
+    if (!email.trim() || !password.trim() || !name.trim()) {
+      Alert.alert('Errore', 'Compila tutti i campi obbligatori');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Errore', 'La password deve essere di almeno 6 caratteri');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.post('/api/auth/register', {
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+      });
+      
+      if (response.data.user) {
+        setUser(response.data.user);
+        Alert.alert('✅ Benvenuto!', 'Account creato con successo');
+      }
+    } catch (error: any) {
+      console.error('Register error:', error);
+      const message = error.response?.data?.detail || 'Impossibile creare l\'account';
+      Alert.alert('Errore', message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -36,58 +102,235 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Logo Section - Branded */}
-        <View style={styles.logoSection}>
-          {/* Wrench Icon Container - Mimics logo style */}
-          <View style={styles.logoContainer}>
-            <View style={styles.wrenchBg}>
-              <MaterialCommunityIcons name="wrench" size={80} color={COLORS.secondary} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoContainer}>
+              <View style={styles.wrenchBg}>
+                <MaterialCommunityIcons name="wrench" size={80} color={COLORS.secondary} />
+              </View>
             </View>
+            
+            <View style={styles.brandContainer}>
+              <Text style={styles.title}>AUTOFFICINA</Text>
+              <Text style={styles.subtitle}>EUGANEA</Text>
+            </View>
+            <Text style={styles.tagline}>La tua officina di fiducia</Text>
           </View>
-          
-          {/* Brand Name with Logo Style */}
-          <View style={styles.brandContainer}>
-            <Text style={styles.title}>AUTOFFICINA</Text>
-            <Text style={styles.subtitle}>EUGANEA</Text>
-          </View>
-          <Text style={styles.tagline}>La tua officina di fiducia</Text>
-        </View>
 
-        {/* Features */}
-        <View style={styles.features}>
-          <View style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
-            </View>
-            <Text style={styles.featureText}>Prenota appuntamenti online</Text>
-          </View>
-          <View style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="locate-outline" size={22} color={COLORS.primary} />
-            </View>
-            <Text style={styles.featureText}>Traccia il tuo veicolo in tempo reale</Text>
-          </View>
-          <View style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Ionicons name="notifications-outline" size={22} color={COLORS.primary} />
-            </View>
-            <Text style={styles.featureText}>Ricevi aggiornamenti istantanei</Text>
-          </View>
-        </View>
+          {/* Choice Screen */}
+          {mode === 'choice' && (
+            <View style={styles.choiceSection}>
+              <TouchableOpacity
+                style={styles.googleButton}
+                onPress={login}
+              >
+                <Ionicons name="logo-google" size={24} color={COLORS.white} />
+                <Text style={styles.googleButtonText}>Accedi con Google</Text>
+              </TouchableOpacity>
 
-        {/* Login Button */}
-        <View style={styles.loginSection}>
-          <TouchableOpacity style={styles.googleButton} onPress={login}>
-            <Ionicons name="logo-google" size={24} color={COLORS.white} />
-            <Text style={styles.googleButtonText}>Accedi con Google</Text>
-          </TouchableOpacity>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OPPURE</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          <Text style={styles.disclaimer}>
-            Accedendo, accetti i nostri Termini di Servizio e la Privacy Policy
-          </Text>
-        </View>
-      </View>
+              <TouchableOpacity
+                style={styles.emailButton}
+                onPress={() => setMode('login')}
+              >
+                <Ionicons name="mail-outline" size={24} color={COLORS.primary} />
+                <Text style={styles.emailButtonText}>Accedi con Email</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.registerLink}
+                onPress={() => setMode('register')}
+              >
+                <Text style={styles.registerLinkText}>
+                  Non hai un account? <Text style={styles.registerLinkBold}>Registrati</Text>
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.disclaimer}>
+                Accedendo, accetti i nostri Termini di Servizio e la Privacy Policy
+              </Text>
+            </View>
+          )}
+
+          {/* Email Login Screen */}
+          {mode === 'login' && (
+            <View style={styles.formSection}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => setMode('choice')}
+              >
+                <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+                <Text style={styles.backText}>Indietro</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.formTitle}>Accedi con Email</Text>
+
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="tuo@email.it"
+                    placeholderTextColor={COLORS.textMuted}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="La tua password"
+                      placeholderTextColor={COLORS.textMuted}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={22}
+                        color={COLORS.textMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <Button
+                  title="Accedi"
+                  onPress={handleEmailLogin}
+                  loading={loading}
+                  fullWidth
+                />
+
+                <TouchableOpacity
+                  style={styles.switchLink}
+                  onPress={() => setMode('register')}
+                >
+                  <Text style={styles.switchLinkText}>
+                    Non hai un account? <Text style={styles.switchLinkBold}>Registrati</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Email Register Screen */}
+          {mode === 'register' && (
+            <View style={styles.formSection}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => setMode('choice')}
+              >
+                <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+                <Text style={styles.backText}>Indietro</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.formTitle}>Crea Account</Text>
+
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Nome Completo *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Mario Rossi"
+                    placeholderTextColor={COLORS.textMuted}
+                    autoCapitalize="words"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="tuo@email.it"
+                    placeholderTextColor={COLORS.textMuted}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Telefono (opzionale)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="+39 ..."
+                    placeholderTextColor={COLORS.textMuted}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Password *</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Minimo 6 caratteri"
+                      placeholderTextColor={COLORS.textMuted}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off' : 'eye'}
+                        size={22}
+                        color={COLORS.textMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <Button
+                  title="Registrati"
+                  onPress={handleEmailRegister}
+                  loading={loading}
+                  fullWidth
+                />
+
+                <TouchableOpacity
+                  style={styles.switchLink}
+                  onPress={() => setMode('login')}
+                >
+                  <Text style={styles.switchLinkText}>
+                    Hai già un account? <Text style={styles.switchLinkBold}>Accedi</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -96,6 +339,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  flex: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -108,15 +354,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    justifyContent: 'space-between',
     paddingVertical: 40,
+    justifyContent: 'space-between',
   },
   logoSection: {
     alignItems: 'center',
     marginTop: 20,
+    marginBottom: 40,
   },
   logoContainer: {
     marginBottom: 20,
@@ -128,7 +375,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    // Metallic gradient effect simulation
     borderWidth: 2,
     borderColor: COLORS.secondaryLight,
   },
@@ -141,9 +387,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.white,
     letterSpacing: 3,
-    textShadowColor: COLORS.primary,
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
   },
   subtitle: {
     fontSize: 26,
@@ -157,34 +400,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontStyle: 'italic',
   },
-  features: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
+  choiceSection: {
     gap: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureText: {
-    fontSize: 14,
-    color: COLORS.text,
-    flex: 1,
-  },
-  loginSection: {
-    alignItems: 'center',
   },
   googleButton: {
     flexDirection: 'row',
@@ -194,7 +411,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
-    width: '100%',
     gap: 12,
   },
   googleButtonText: {
@@ -202,11 +418,124 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.white,
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+  },
+  emailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  emailButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  registerLink: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  registerLinkText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  registerLinkBold: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
   disclaimer: {
     fontSize: 11,
     color: COLORS.textMuted,
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 24,
     lineHeight: 16,
+  },
+  formSection: {
+    flex: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 24,
+  },
+  backText: {
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 24,
+  },
+  form: {
+    gap: 20,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  input: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  eyeButton: {
+    padding: 16,
+  },
+  switchLink: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  switchLinkText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  switchLinkBold: {
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 });
