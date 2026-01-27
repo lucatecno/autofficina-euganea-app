@@ -105,7 +105,9 @@ export default function LoginScreen() {
   }
 
   if (isAuthenticated) {
-    return <Redirect href="/(tabs)/home" />;
+    // Redirect automatico in base al ruolo
+    const isAdmin = user?.role === 'admin';
+    return <Redirect href={isAdmin ? '/admin' : '/(tabs)/home'} />;
   }
 
   return (
