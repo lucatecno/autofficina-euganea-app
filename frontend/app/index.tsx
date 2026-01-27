@@ -68,14 +68,38 @@ export default function LoginScreen() {
   };
 
   const handleEmailRegister = async () => {
+    // Validazione campi obbligatori
     if (!email.trim() || !password.trim() || !name.trim()) {
       Alert.alert('Errore', 'Compila tutti i campi obbligatori');
       return;
     }
 
+    // Validazione email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Errore', 'Inserisci un indirizzo email valido');
+      return;
+    }
+
+    // Validazione nome (solo lettere e spazi)
+    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(name.trim())) {
+      Alert.alert('Errore', 'Il nome deve contenere solo lettere');
+      return;
+    }
+
+    // Validazione password
     if (password.length < 6) {
       Alert.alert('Errore', 'La password deve essere di almeno 6 caratteri');
       return;
+    }
+
+    // Validazione telefono (se inserito)
+    if (phone.trim()) {
+      const phoneClean = phone.trim().replace(/\s/g, '');
+      if (!/^[\+]?[0-9]{8,15}$/.test(phoneClean)) {
+        Alert.alert('Errore', 'Numero di telefono non valido (es: +39 333 1234567)');
+        return;
+      }
     }
 
     setLoading(true);
@@ -90,6 +114,15 @@ export default function LoginScreen() {
       if (response.data.user && response.data.session_token) {
         await AsyncStorage.setItem('session_token', response.data.session_token);
         setUser(response.data.user);
+        
+        // Redirect manuale
+        if (Platform.OS === 'web') {
+          setTimeout(() => {
+            const isAdmin = response.data.user.role === 'admin';
+            window.location.href = isAdmin ? '/admin' : '/(tabs)/home';
+          }, 100);
+        }
+        
         Alert.alert('✅ Benvenuto!', 'Account creato con successo');
       }
     } catch (error: any) {
