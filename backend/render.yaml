@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: autofficina-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        value: mongodb+srv://autofficina_user:Battagliaterme26.@autofficina-db.kzwvezn.mongodb.net/?appName=autofficina-db
+      - key: DB_NAME
+        value: autofficina_db
+      - key: OFFICINA_EMAIL
+        value: autofficinaeuganea@libero.it
+      - key: OFFICINA_PHONE
+        value: +393203145049
