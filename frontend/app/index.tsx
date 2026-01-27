@@ -48,6 +48,9 @@ export default function LoginScreen() {
       if (response.data.user && response.data.session_token) {
         await AsyncStorage.setItem('session_token', response.data.session_token);
         setUser(response.data.user);
+        
+        // Redirect automatico in base al ruolo
+        // Il redirect avverrà automaticamente tramite il componente <Redirect> quando isAuthenticated diventa true
       }
     } catch (error: any) {
       console.error('Login error:', error);
