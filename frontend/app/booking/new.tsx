@@ -128,9 +128,12 @@ export default function NewBookingScreen() {
         notes: notes || undefined,
       });
       Alert.alert(
-        'Prenotazione Inviata!',
-        'Riceverai una conferma a breve.',
-        [{ text: 'OK', onPress: () => router.replace('/(tabs)/bookings') }]
+        '🎉 Grazie!',
+        'La tua prenotazione è stata confermata. Riceverai una conferma via email e WhatsApp a breve.\n\nTi aspettiamo in officina!',
+        [
+          { text: 'Vai alle Prenotazioni', onPress: () => router.replace('/(tabs)/bookings') },
+          { text: 'Torna alla Home', onPress: () => router.replace('/(tabs)/home'), style: 'cancel' }
+        ]
       );
     } catch (error) {
       console.error('Error creating booking:', error);
