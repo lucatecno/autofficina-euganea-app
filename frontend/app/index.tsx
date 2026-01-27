@@ -142,20 +142,6 @@ export default function LoginScreen() {
           {mode === 'choice' && (
             <View style={styles.choiceSection}>
               <TouchableOpacity
-                style={styles.googleButton}
-                onPress={login}
-              >
-                <Ionicons name="logo-google" size={24} color={COLORS.white} />
-                <Text style={styles.googleButtonText}>Accedi con Google</Text>
-              </TouchableOpacity>
-
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OPPURE</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <TouchableOpacity
                 style={styles.emailButton}
                 onPress={() => setMode('login')}
               >
