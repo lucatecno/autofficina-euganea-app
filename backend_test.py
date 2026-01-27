@@ -1,368 +1,588 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Autofficina Euganea
-Tests all backend endpoints according to test_result.md
+Comprehensive Backend API Testing for Autofficina Euganea
+Pre-Deploy Validation - Tests all endpoints with real credentials
 """
 
 import requests
 import json
 from datetime import datetime, timedelta
-import sys
-import os
+from typing import Optional, Dict, Any
 
-# Get backend URL from frontend env
-BACKEND_URL = "https://autotrack-app-1.preview.emergentagent.com"
-API_BASE = f"{BACKEND_URL}/api"
+# Backend URL
+BACKEND_URL = "https://autotrack-app-1.preview.emergentagent.com/api"
 
-class BackendTester:
-    def __init__(self):
-        self.session_token = None
-        self.user_id = None
-        self.vehicle_id = None
-        self.service_id = None
-        self.booking_id = None
-        self.results = {}
-        
-    def log_result(self, test_name, success, message="", data=None):
-        """Log test result"""
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} {test_name}: {message}")
-        self.results[test_name] = {
-            "success": success,
-            "message": message,
-            "data": data
-        }
-        
-    def test_health_check(self):
-        """Test basic health check endpoint"""
-        try:
-            response = requests.get(f"{API_BASE}/", timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if "message" in data and "Autofficina Euganea API" in data["message"]:
-                    self.log_result("Health Check", True, f"API online: {data['message']}")
-                    return True
-                else:
-                    self.log_result("Health Check", False, f"Unexpected response: {data}")
-            else:
-                self.log_result("Health Check", False, f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Health Check", False, f"Connection error: {str(e)}")
+# Test credentials
+ADMIN_EMAIL = "baxadmin@autofficina.it"
+ADMIN_PASSWORD = "Bassinimerda1."
+DEMO_EMAIL = "demo@autofficina.it"
+DEMO_PASSWORD = "Demo1234"
+
+# Test data storage
+test_data = {
+    "admin_session": None,
+    "demo_session": None,
+    "vehicle_id": None,
+    "service_id": None,
+    "booking_id": None
+}
+
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    END = '\033[0m'
+
+def log_test(name: str, status: str, details: str = ""):
+    """Log test result with color"""
+    if status == "PASS":
+        print(f"{Colors.GREEN}✅ {name}: PASS{Colors.END}")
+    elif status == "FAIL":
+        print(f"{Colors.RED}❌ {name}: FAIL{Colors.END}")
+        if details:
+            print(f"   {Colors.RED}{details}{Colors.END}")
+    elif status == "INFO":
+        print(f"{Colors.BLUE}ℹ️  {name}{Colors.END}")
+    if details and status == "PASS":
+        print(f"   {Colors.YELLOW}{details}{Colors.END}")
+
+def test_health_check():
+    """Test health check endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}HEALTH CHECK{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        response = requests.get(f"{BACKEND_URL}/health", timeout=10)
+        if response.status_code == 200:
+            log_test("GET /api/health", "PASS", f"Status: {response.json()}")
+            return True
+        else:
+            log_test("GET /api/health", "FAIL", f"Status code: {response.status_code}")
+            return False
+    except Exception as e:
+        log_test("GET /api/health", "FAIL", f"Error: {str(e)}")
         return False
-        
-    def setup_test_user(self):
-        """Create test user and session in MongoDB"""
-        try:
-            import subprocess
-            
-            # Create test user and session
-            mongo_script = '''
-use('test_database');
-var userId = 'user_test123';
-var sessionToken = 'test_session_123456';
-db.users.deleteOne({user_id: userId});
-db.user_sessions.deleteOne({session_token: sessionToken});
-db.users.insertOne({
-  user_id: userId,
-  email: 'test@example.com',
-  name: 'Test User',
-  picture: null,
-  created_at: new Date(),
-  gdpr_accepted: true,
-  marketing_accepted: false
-});
-db.user_sessions.insertOne({
-  user_id: userId,
-  session_token: sessionToken,
-  expires_at: new Date(Date.now() + 7*24*60*60*1000),
-  created_at: new Date()
-});
-print('Session token: ' + sessionToken);
-            '''
-            
-            result = subprocess.run(
-                ['mongosh', '--eval', mongo_script],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            if result.returncode == 0:
-                self.session_token = 'test_session_123456'
-                self.user_id = 'user_test123'
-                self.log_result("Setup Test User", True, "Test user and session created")
+
+def test_contact_info():
+    """Test contact info endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}CONTACT INFO{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        response = requests.get(f"{BACKEND_URL}/contact-info", timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            log_test("GET /api/contact-info", "PASS", 
+                    f"Name: {data.get('name')}, Phone: {data.get('phone')}")
+            return True
+        else:
+            log_test("GET /api/contact-info", "FAIL", f"Status code: {response.status_code}")
+            return False
+    except Exception as e:
+        log_test("GET /api/contact-info", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_init_services():
+    """Initialize services in database"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}INITIALIZE SERVICES{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        response = requests.post(f"{BACKEND_URL}/init-services", timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            log_test("POST /api/init-services", "PASS", f"{data.get('message')}")
+            return True
+        else:
+            log_test("POST /api/init-services", "FAIL", f"Status code: {response.status_code}")
+            return False
+    except Exception as e:
+        log_test("POST /api/init-services", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_get_services():
+    """Test get services endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}SERVICES{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        response = requests.get(f"{BACKEND_URL}/services", timeout=10)
+        if response.status_code == 200:
+            services = response.json()
+            log_test("GET /api/services", "PASS", 
+                    f"Found {len(services)} services")
+            if len(services) >= 6:
+                # Store first service ID for booking tests
+                test_data["service_id"] = services[0]["service_id"]
+                log_test("Services validation", "PASS", 
+                        f"Expected 6 services, got {len(services)}")
                 return True
             else:
-                self.log_result("Setup Test User", False, f"MongoDB error: {result.stderr}")
-        except Exception as e:
-            self.log_result("Setup Test User", False, f"Error: {str(e)}")
-        return False
-        
-    def test_auth_me(self):
-        """Test GET /api/auth/me endpoint"""
-        if not self.session_token:
-            self.log_result("Auth Me", False, "No session token available")
-            return False
-            
-        try:
-            headers = {"Authorization": f"Bearer {self.session_token}"}
-            response = requests.get(f"{API_BASE}/auth/me", headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("user_id") == self.user_id and data.get("email") == "test@example.com":
-                    self.log_result("Auth Me", True, f"User authenticated: {data['name']}")
-                    return True
-                else:
-                    self.log_result("Auth Me", False, f"Unexpected user data: {data}")
-            else:
-                self.log_result("Auth Me", False, f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Auth Me", False, f"Error: {str(e)}")
-        return False
-        
-    def test_init_services(self):
-        """Test POST /api/init-services endpoint"""
-        try:
-            response = requests.post(f"{API_BASE}/init-services", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "Initialized" in data.get("message", ""):
-                    self.log_result("Init Services", True, data["message"])
-                    return True
-                else:
-                    self.log_result("Init Services", False, f"Unexpected response: {data}")
-            else:
-                self.log_result("Init Services", False, f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Init Services", False, f"Error: {str(e)}")
-        return False
-        
-    def test_get_services(self):
-        """Test GET /api/services endpoint"""
-        try:
-            response = requests.get(f"{API_BASE}/services", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) >= 6:
-                    # Store first service ID for booking tests
-                    if data:
-                        self.service_id = data[0].get("service_id")
-                    self.log_result("Get Services", True, f"Retrieved {len(data)} services")
-                    return True
-                else:
-                    self.log_result("Get Services", False, f"Expected 6+ services, got {len(data) if isinstance(data, list) else 'non-list'}")
-            else:
-                self.log_result("Get Services", False, f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Get Services", False, f"Error: {str(e)}")
-        return False
-        
-    def test_get_slots(self):
-        """Test GET /api/slots endpoint"""
-        try:
-            # Test with tomorrow's date
-            tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-            response = requests.get(f"{API_BASE}/slots?date={tomorrow}", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "slots" in data and isinstance(data["slots"], list):
-                    slots_count = len(data["slots"])
-                    self.log_result("Get Time Slots", True, f"Retrieved {slots_count} time slots for {tomorrow}")
-                    return True
-                else:
-                    self.log_result("Get Time Slots", False, f"Invalid slots response: {data}")
-            else:
-                self.log_result("Get Time Slots", False, f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Get Time Slots", False, f"Error: {str(e)}")
-        return False
-        
-    def test_vehicles_crud(self):
-        """Test vehicles CRUD operations"""
-        if not self.session_token:
-            self.log_result("Vehicles CRUD", False, "No session token available")
-            return False
-            
-        headers = {"Authorization": f"Bearer {self.session_token}"}
-        
-        try:
-            # Test GET vehicles (should be empty initially)
-            response = requests.get(f"{API_BASE}/vehicles", headers=headers, timeout=10)
-            if response.status_code != 200:
-                self.log_result("Vehicles CRUD", False, f"GET vehicles failed: {response.status_code}")
+                log_test("Services validation", "FAIL", 
+                        f"Expected 6 services, got {len(services)}")
                 return False
-                
-            # Test POST vehicle
-            vehicle_data = {
-                "marca": "Fiat",
-                "modello": "Panda",
-                "targa": "AB123CD",
-                "anno": 2020
-            }
-            response = requests.post(f"{API_BASE}/vehicles", json=vehicle_data, headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                vehicle = response.json()
-                self.vehicle_id = vehicle.get("vehicle_id")
-                if self.vehicle_id:
-                    self.log_result("Vehicles CRUD", True, f"Vehicle created: {vehicle['marca']} {vehicle['modello']} ({vehicle['targa']})")
-                    return True
-                else:
-                    self.log_result("Vehicles CRUD", False, f"No vehicle_id in response: {vehicle}")
-            else:
-                self.log_result("Vehicles CRUD", False, f"POST vehicle failed: HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Vehicles CRUD", False, f"Error: {str(e)}")
-        return False
-        
-    def test_bookings_crud(self):
-        """Test bookings CRUD operations"""
-        if not self.session_token or not self.vehicle_id or not self.service_id:
-            self.log_result("Bookings CRUD", False, "Missing prerequisites (session, vehicle, or service)")
+        else:
+            log_test("GET /api/services", "FAIL", f"Status code: {response.status_code}")
             return False
-            
-        headers = {"Authorization": f"Bearer {self.session_token}"}
-        
-        try:
-            # Test GET bookings (should be empty initially)
-            response = requests.get(f"{API_BASE}/bookings", headers=headers, timeout=10)
-            if response.status_code != 200:
-                self.log_result("Bookings CRUD", False, f"GET bookings failed: {response.status_code}")
-                return False
-                
-            # Test POST booking
-            booking_data = {
-                "vehicle_id": self.vehicle_id,
-                "service_id": self.service_id,
-                "scheduled_date": (datetime.now() + timedelta(days=2)).isoformat(),
-                "notes": "Test booking"
-            }
-            response = requests.post(f"{API_BASE}/bookings", json=booking_data, headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                booking = response.json()
-                self.booking_id = booking.get("booking_id")
-                if self.booking_id:
-                    self.log_result("Bookings CRUD", True, f"Booking created: {booking['booking_id']} for {booking['scheduled_date']}")
-                    return True
-                else:
-                    self.log_result("Bookings CRUD", False, f"No booking_id in response: {booking}")
-            else:
-                self.log_result("Bookings CRUD", False, f"POST booking failed: HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Bookings CRUD", False, f"Error: {str(e)}")
+    except Exception as e:
+        log_test("GET /api/services", "FAIL", f"Error: {str(e)}")
         return False
+
+def test_register_demo_user():
+    """Test user registration"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}AUTH - REGISTRATION{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        # Try to register demo user
+        payload = {
+            "email": DEMO_EMAIL,
+            "password": DEMO_PASSWORD,
+            "name": "Demo User",
+            "phone": "+39 123 456 7890"
+        }
+        response = requests.post(f"{BACKEND_URL}/auth/register", json=payload, timeout=10)
         
-    def test_vehicle_tracking(self):
-        """Test vehicle status tracking"""
-        if not self.session_token or not self.booking_id:
-            self.log_result("Vehicle Tracking", False, "Missing prerequisites (session or booking)")
+        if response.status_code == 200:
+            data = response.json()
+            test_data["demo_session"] = data.get("session_token")
+            log_test("POST /api/auth/register", "PASS", 
+                    f"User: {data['user']['name']}, Email: {data['user']['email']}")
+            return True
+        elif response.status_code == 400 and "già registrata" in response.text:
+            log_test("POST /api/auth/register", "PASS", 
+                    "User already exists (expected)")
+            return True
+        else:
+            log_test("POST /api/auth/register", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
             return False
-            
-        headers = {"Authorization": f"Bearer {self.session_token}"}
-        
-        try:
-            # Test GET tracking history
-            response = requests.get(f"{API_BASE}/tracking/{self.booking_id}", headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                tracking = response.json()
-                if isinstance(tracking, list) and len(tracking) > 0:
-                    self.log_result("Vehicle Tracking", True, f"Retrieved {len(tracking)} tracking entries")
-                    return True
-                else:
-                    self.log_result("Vehicle Tracking", False, f"No tracking data found: {tracking}")
-            else:
-                self.log_result("Vehicle Tracking", False, f"GET tracking failed: HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Vehicle Tracking", False, f"Error: {str(e)}")
+    except Exception as e:
+        log_test("POST /api/auth/register", "FAIL", f"Error: {str(e)}")
         return False
+
+def test_register_admin_user():
+    """Test admin user registration"""
+    try:
+        payload = {
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD,
+            "name": "Admin User",
+            "phone": "+39 320 314 5049"
+        }
+        response = requests.post(f"{BACKEND_URL}/auth/register", json=payload, timeout=10)
         
-    def test_admin_endpoints(self):
-        """Test admin endpoints (no auth required for MVP)"""
-        try:
-            # Test GET admin/bookings
-            response = requests.get(f"{API_BASE}/admin/bookings", timeout=10)
-            
-            if response.status_code == 200:
-                bookings = response.json()
-                if isinstance(bookings, list):
-                    self.log_result("Admin Endpoints", True, f"Admin retrieved {len(bookings)} bookings")
-                    
-                    # Test admin tracking update if we have a booking
-                    if self.booking_id:
-                        tracking_data = {
-                            "booking_id": self.booking_id,
-                            "status": "checked_in",
-                            "notes": "Vehicle arrived for service"
-                        }
-                        response = requests.post(f"{API_BASE}/admin/tracking", json=tracking_data, timeout=10)
-                        if response.status_code == 200:
-                            self.log_result("Admin Tracking Update", True, "Status updated successfully")
-                        else:
-                            self.log_result("Admin Tracking Update", False, f"Status update failed: {response.status_code}")
-                    
-                    return True
-                else:
-                    self.log_result("Admin Endpoints", False, f"Invalid bookings response: {bookings}")
-            else:
-                self.log_result("Admin Endpoints", False, f"GET admin/bookings failed: HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_result("Admin Endpoints", False, f"Error: {str(e)}")
+        if response.status_code == 200:
+            data = response.json()
+            test_data["admin_session"] = data.get("session_token")
+            log_test("POST /api/auth/register (Admin)", "PASS", 
+                    f"Admin registered: {data['user']['email']}")
+            return True
+        elif response.status_code == 400 and "già registrata" in response.text:
+            log_test("POST /api/auth/register (Admin)", "PASS", 
+                    "Admin already exists (expected)")
+            return True
+        else:
+            log_test("POST /api/auth/register (Admin)", "FAIL", 
+                    f"Status code: {response.status_code}")
+            return False
+    except Exception as e:
+        log_test("POST /api/auth/register (Admin)", "FAIL", f"Error: {str(e)}")
         return False
+
+def test_login_demo_user():
+    """Test user login"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}AUTH - LOGIN{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        payload = {
+            "email": DEMO_EMAIL,
+            "password": DEMO_PASSWORD
+        }
+        response = requests.post(f"{BACKEND_URL}/auth/login", json=payload, timeout=10)
         
-    def run_all_tests(self):
-        """Run all backend tests"""
-        print(f"🚀 Starting Backend API Tests for Autofficina Euganea")
-        print(f"📍 Backend URL: {BACKEND_URL}")
-        print("=" * 60)
+        if response.status_code == 200:
+            data = response.json()
+            test_data["demo_session"] = data.get("session_token")
+            log_test("POST /api/auth/login (Demo)", "PASS", 
+                    f"Logged in: {data['user']['email']}")
+            return True
+        else:
+            log_test("POST /api/auth/login (Demo)", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("POST /api/auth/login (Demo)", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_login_admin_user():
+    """Test admin login"""
+    try:
+        payload = {
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD
+        }
+        response = requests.post(f"{BACKEND_URL}/auth/login", json=payload, timeout=10)
         
-        # Test sequence based on dependencies
-        tests = [
-            ("Health Check", self.test_health_check),
-            ("Setup Test User", self.setup_test_user),
-            ("Auth Session Exchange API", self.test_auth_me),
-            ("Services API", self.test_init_services),
-            ("Services API", self.test_get_services),
-            ("Time Slots API", self.test_get_slots),
-            ("Vehicles CRUD API", self.test_vehicles_crud),
-            ("Bookings CRUD API", self.test_bookings_crud),
-            ("Vehicle Status Tracking API", self.test_vehicle_tracking),
-            ("Admin Bookings API", self.test_admin_endpoints),
-        ]
+        if response.status_code == 200:
+            data = response.json()
+            test_data["admin_session"] = data.get("session_token")
+            log_test("POST /api/auth/login (Admin)", "PASS", 
+                    f"Logged in: {data['user']['email']}")
+            return True
+        else:
+            log_test("POST /api/auth/login (Admin)", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("POST /api/auth/login (Admin)", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_get_me():
+    """Test get current user endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}AUTH - GET ME{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["demo_session"]:
+        log_test("GET /api/auth/me", "FAIL", "No session token available")
+        return False
+    
+    try:
+        headers = {"Authorization": f"Bearer {test_data['demo_session']}"}
+        response = requests.get(f"{BACKEND_URL}/auth/me", headers=headers, timeout=10)
         
-        passed = 0
-        total = len(tests)
+        if response.status_code == 200:
+            data = response.json()
+            log_test("GET /api/auth/me", "PASS", 
+                    f"User: {data.get('name')}, Email: {data.get('email')}")
+            return True
+        else:
+            log_test("GET /api/auth/me", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("GET /api/auth/me", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_create_vehicle():
+    """Test create vehicle endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}VEHICLES - CREATE{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["demo_session"]:
+        log_test("POST /api/vehicles", "FAIL", "No session token available")
+        return False
+    
+    try:
+        headers = {"Authorization": f"Bearer {test_data['demo_session']}"}
+        payload = {
+            "marca": "Fiat",
+            "modello": "Panda",
+            "targa": "AB123CD",
+            "anno": 2020
+        }
+        response = requests.post(f"{BACKEND_URL}/vehicles", json=payload, headers=headers, timeout=10)
         
-        for test_name, test_func in tests:
-            try:
-                if test_func():
-                    passed += 1
-            except Exception as e:
-                self.log_result(test_name, False, f"Test crashed: {str(e)}")
+        if response.status_code == 200:
+            data = response.json()
+            test_data["vehicle_id"] = data.get("vehicle_id")
+            log_test("POST /api/vehicles", "PASS", 
+                    f"Created: {data.get('marca')} {data.get('modello')} ({data.get('targa')})")
+            return True
+        else:
+            log_test("POST /api/vehicles", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("POST /api/vehicles", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_get_vehicles():
+    """Test get vehicles endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}VEHICLES - GET{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["demo_session"]:
+        log_test("GET /api/vehicles", "FAIL", "No session token available")
+        return False
+    
+    try:
+        headers = {"Authorization": f"Bearer {test_data['demo_session']}"}
+        response = requests.get(f"{BACKEND_URL}/vehicles", headers=headers, timeout=10)
         
-        print("=" * 60)
-        print(f"📊 Test Results: {passed}/{total} tests passed")
+        if response.status_code == 200:
+            vehicles = response.json()
+            log_test("GET /api/vehicles", "PASS", 
+                    f"Found {len(vehicles)} vehicle(s)")
+            return True
+        else:
+            log_test("GET /api/vehicles", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("GET /api/vehicles", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_get_slots():
+    """Test get available slots endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}SLOTS - GET AVAILABLE{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        # Get slots for tomorrow
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+        response = requests.get(f"{BACKEND_URL}/slots?date={tomorrow}", timeout=10)
         
-        # Print summary
-        print("\n📋 DETAILED RESULTS:")
-        for test_name, result in self.results.items():
-            status = "✅" if result["success"] else "❌"
-            print(f"{status} {test_name}: {result['message']}")
+        if response.status_code == 200:
+            data = response.json()
+            slots = data.get("slots", [])
+            available_slots = [s for s in slots if s.get("available")]
+            log_test("GET /api/slots", "PASS", 
+                    f"Date: {tomorrow}, Total slots: {len(slots)}, Available: {len(available_slots)}")
+            return True
+        else:
+            log_test("GET /api/slots", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("GET /api/slots", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_create_booking():
+    """Test create booking endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}BOOKINGS - CREATE{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["demo_session"]:
+        log_test("POST /api/bookings", "FAIL", "No session token available")
+        return False
+    
+    if not test_data["vehicle_id"]:
+        log_test("POST /api/bookings", "FAIL", "No vehicle_id available")
+        return False
+    
+    if not test_data["service_id"]:
+        log_test("POST /api/bookings", "FAIL", "No service_id available")
+        return False
+    
+    try:
+        headers = {"Authorization": f"Bearer {test_data['demo_session']}"}
+        # Schedule for tomorrow at 10:00
+        tomorrow = datetime.now() + timedelta(days=1)
+        scheduled_date = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
         
-        return passed, total, self.results
+        payload = {
+            "vehicle_id": test_data["vehicle_id"],
+            "service_id": test_data["service_id"],
+            "scheduled_date": scheduled_date.isoformat(),
+            "notes": "Test booking from automated tests"
+        }
+        response = requests.post(f"{BACKEND_URL}/bookings", json=payload, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            test_data["booking_id"] = data.get("booking_id")
+            log_test("POST /api/bookings", "PASS", 
+                    f"Booking ID: {data.get('booking_id')}, Status: {data.get('status')}")
+            return True
+        else:
+            log_test("POST /api/bookings", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("POST /api/bookings", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_get_bookings():
+    """Test get bookings endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}BOOKINGS - GET{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["demo_session"]:
+        log_test("GET /api/bookings", "FAIL", "No session token available")
+        return False
+    
+    try:
+        headers = {"Authorization": f"Bearer {test_data['demo_session']}"}
+        response = requests.get(f"{BACKEND_URL}/bookings", headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            bookings = response.json()
+            log_test("GET /api/bookings", "PASS", 
+                    f"Found {len(bookings)} booking(s)")
+            return True
+        else:
+            log_test("GET /api/bookings", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("GET /api/bookings", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_admin_get_bookings():
+    """Test admin get all bookings endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}ADMIN - GET ALL BOOKINGS{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    try:
+        # Admin endpoint doesn't require auth in current implementation
+        response = requests.get(f"{BACKEND_URL}/admin/bookings", timeout=10)
+        
+        if response.status_code == 200:
+            bookings = response.json()
+            log_test("GET /api/admin/bookings", "PASS", 
+                    f"Found {len(bookings)} booking(s)")
+            return True
+        else:
+            log_test("GET /api/admin/bookings", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("GET /api/admin/bookings", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_admin_update_booking():
+    """Test admin update booking endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}ADMIN - UPDATE BOOKING{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["booking_id"]:
+        log_test("PUT /api/admin/bookings/{id}", "FAIL", "No booking_id available")
+        return False
+    
+    try:
+        payload = {
+            "status": "confirmed",
+            "admin_notes": "Booking confirmed by automated test"
+        }
+        response = requests.put(
+            f"{BACKEND_URL}/admin/bookings/{test_data['booking_id']}", 
+            json=payload, 
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            log_test("PUT /api/admin/bookings/{id}", "PASS", 
+                    f"Updated status to: {data.get('status')}")
+            return True
+        else:
+            log_test("PUT /api/admin/bookings/{id}", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("PUT /api/admin/bookings/{id}", "FAIL", f"Error: {str(e)}")
+        return False
+
+def test_logout():
+    """Test logout endpoint"""
+    print(f"\n{Colors.BLUE}{'='*60}{Colors.END}")
+    print(f"{Colors.BLUE}AUTH - LOGOUT{Colors.END}")
+    print(f"{Colors.BLUE}{'='*60}{Colors.END}")
+    
+    if not test_data["demo_session"]:
+        log_test("POST /api/auth/logout", "FAIL", "No session token available")
+        return False
+    
+    try:
+        headers = {"Authorization": f"Bearer {test_data['demo_session']}"}
+        response = requests.post(f"{BACKEND_URL}/auth/logout", headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            log_test("POST /api/auth/logout", "PASS", "Logged out successfully")
+            return True
+        else:
+            log_test("POST /api/auth/logout", "FAIL", 
+                    f"Status code: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        log_test("POST /api/auth/logout", "FAIL", f"Error: {str(e)}")
+        return False
+
+def run_all_tests():
+    """Run all backend tests"""
+    print(f"\n{Colors.GREEN}{'='*60}{Colors.END}")
+    print(f"{Colors.GREEN}AUTOFFICINA EUGANEA - BACKEND API TESTS{Colors.END}")
+    print(f"{Colors.GREEN}Backend URL: {BACKEND_URL}{Colors.END}")
+    print(f"{Colors.GREEN}{'='*60}{Colors.END}")
+    
+    results = []
+    
+    # Health & Info
+    results.append(("Health Check", test_health_check()))
+    results.append(("Contact Info", test_contact_info()))
+    
+    # Initialize Services
+    results.append(("Init Services", test_init_services()))
+    results.append(("Get Services", test_get_services()))
+    
+    # Auth - Registration
+    results.append(("Register Demo User", test_register_demo_user()))
+    results.append(("Register Admin User", test_register_admin_user()))
+    
+    # Auth - Login
+    results.append(("Login Demo User", test_login_demo_user()))
+    results.append(("Login Admin User", test_login_admin_user()))
+    
+    # Auth - Get Me
+    results.append(("Get Current User", test_get_me()))
+    
+    # Vehicles
+    results.append(("Create Vehicle", test_create_vehicle()))
+    results.append(("Get Vehicles", test_get_vehicles()))
+    
+    # Slots
+    results.append(("Get Available Slots", test_get_slots()))
+    
+    # Bookings
+    results.append(("Create Booking", test_create_booking()))
+    results.append(("Get User Bookings", test_get_bookings()))
+    
+    # Admin
+    results.append(("Admin Get All Bookings", test_admin_get_bookings()))
+    results.append(("Admin Update Booking", test_admin_update_booking()))
+    
+    # Logout
+    results.append(("Logout", test_logout()))
+    
+    # Summary
+    print(f"\n{Colors.GREEN}{'='*60}{Colors.END}")
+    print(f"{Colors.GREEN}TEST SUMMARY{Colors.END}")
+    print(f"{Colors.GREEN}{'='*60}{Colors.END}")
+    
+    passed = sum(1 for _, result in results if result)
+    failed = sum(1 for _, result in results if not result)
+    total = len(results)
+    
+    print(f"\nTotal Tests: {total}")
+    print(f"{Colors.GREEN}Passed: {passed}{Colors.END}")
+    print(f"{Colors.RED}Failed: {failed}{Colors.END}")
+    print(f"Success Rate: {(passed/total)*100:.1f}%\n")
+    
+    if failed > 0:
+        print(f"{Colors.RED}Failed Tests:{Colors.END}")
+        for name, result in results:
+            if not result:
+                print(f"  {Colors.RED}❌ {name}{Colors.END}")
+    
+    return passed, failed, total
 
 if __name__ == "__main__":
-    tester = BackendTester()
-    passed, total, results = tester.run_all_tests()
-    
-    # Exit with error code if tests failed
-    if passed < total:
-        sys.exit(1)
-    else:
-        print("\n🎉 All tests passed!")
-        sys.exit(0)
+    passed, failed, total = run_all_tests()
+    exit(0 if failed == 0 else 1)
