@@ -26,9 +26,48 @@ export default function NewVehicleScreen() {
   const [anno, setAnno] = useState('');
 
   const handleSubmit = async () => {
+    // Validazione campi obbligatori
     if (!marca.trim() || !modello.trim() || !targa.trim()) {
-      Alert.alert('Errore', 'Compila tutti i campi obbligatori');
+      Alert.alert('Errore', 'Compila tutti i campi obbligatori (Marca, Modello, Targa)');
       return;
+    }
+
+    // Validazione Marca (solo lettere e spazi)
+    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(marca.trim())) {
+      Alert.alert('Errore', 'La Marca deve contenere solo lettere');
+      return;
+    }
+
+    // Validazione Modello (lettere, numeri, spazi, trattini)
+    if (!/^[a-zA-Z0-9À-ÿ\s\-]+$/.test(modello.trim())) {
+      Alert.alert('Errore', 'Il Modello contiene caratteri non validi');
+      return;
+    }
+
+    // Validazione Targa (formato italiano: 2 lettere, 3 numeri, 2 lettere)
+    const targaPulita = targa.trim().replace(/\s/g, '').toUpperCase();
+    if (!/^[A-Z]{2}[0-9]{3}[A-Z]{2}$/.test(targaPulita)) {
+      Alert.alert(
+        'Targa non valida', 
+        'Formato corretto: AB123CD\n(2 lettere, 3 numeri, 2 lettere)'
+      );
+      return;
+    }
+
+    // Validazione Anno (opzionale, ma se inserito deve essere valido)
+    if (anno.trim()) {
+      const annoNum = parseInt(anno, 10);
+      const annoCorrente = new Date().getFullYear();
+      
+      if (!/^[0-9]{4}$/.test(anno)) {
+        Alert.alert('Errore', 'L\'anno deve essere di 4 cifre (es: 2020)');
+        return;
+      }
+      
+      if (annoNum < 1900 || annoNum > annoCorrente + 1) {
+        Alert.alert('Errore', `L'anno deve essere tra 1900 e ${annoCorrente + 1}`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -36,7 +75,7 @@ export default function NewVehicleScreen() {
       await vehiclesAPI.create({
         marca: marca.trim(),
         modello: modello.trim(),
-        targa: targa.trim().toUpperCase(),
+        targa: targaPulita,
         anno: anno ? parseInt(anno, 10) : undefined,
       });
       Alert.alert(
