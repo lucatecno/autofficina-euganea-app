@@ -40,12 +40,13 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/login', {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
         email: email.trim().toLowerCase(),
         password: password.trim(),
       });
       
-      if (response.data.user) {
+      if (response.data.user && response.data.session_token) {
+        await AsyncStorage.setItem('session_token', response.data.session_token);
         setUser(response.data.user);
       }
     } catch (error: any) {
@@ -70,14 +71,15 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/register', {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/register`, {
         email: email.trim().toLowerCase(),
         password: password.trim(),
         name: name.trim(),
         phone: phone.trim() || undefined,
       });
       
-      if (response.data.user) {
+      if (response.data.user && response.data.session_token) {
+        await AsyncStorage.setItem('session_token', response.data.session_token);
         setUser(response.data.user);
         Alert.alert('✅ Benvenuto!', 'Account creato con successo');
       }
