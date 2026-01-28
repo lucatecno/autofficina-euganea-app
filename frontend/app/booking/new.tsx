@@ -127,14 +127,8 @@ export default function NewBookingScreen() {
         scheduled_date: selectedSlot.datetime,
         notes: notes || undefined,
       });
-      Alert.alert(
-        '🎉 Grazie!',
-        'La tua prenotazione è stata confermata. Riceverai una conferma via email e WhatsApp a breve.\n\nTi aspettiamo in officina!',
-        [
-          { text: 'Vai alle Prenotazioni', onPress: () => router.replace('/(tabs)/bookings') },
-          { text: 'Torna alla Home', onPress: () => router.replace('/(tabs)/home'), style: 'cancel' }
-        ]
-      );
+      Alert.alert('🎉 Grazie!', 'La tua prenotazione è stata confermata!');
+      router.replace('/(tabs)/bookings');
     } catch (error) {
       console.error('Error creating booking:', error);
       Alert.alert('Errore', 'Impossibile creare la prenotazione');
