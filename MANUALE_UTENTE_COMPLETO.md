@@ -28,12 +28,12 @@
 
 **Per Clienti:**
 ```
-https://autotrack-app-1.preview.emergentagent.com
+https://euganea-portal.preview.emergentagent.com
 ```
 
 **Per Admin Officina:**
 ```
-https://autotrack-app-1.preview.emergentagent.com/admin
+https://euganea-portal.preview.emergentagent.com/admin
 ```
 
 ### **Come Accedere:**
@@ -346,7 +346,7 @@ Vai su **"Profilo"** (tab in basso a destra)
 
 **Link diretto:**
 ```
-https://autotrack-app-1.preview.emergentagent.com/admin
+https://euganea-portal.preview.emergentagent.com/admin
 ```
 
 **Credenziali:**

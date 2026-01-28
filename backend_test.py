@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 # Backend URL
-BACKEND_URL = "https://autotrack-app-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://euganea-portal.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "baxadmin@autofficina.it"

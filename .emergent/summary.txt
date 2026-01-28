@@ -1,199 +1,196 @@
 <analysis>
-
-**original_problem_statement**: The user requested a full-stack mobile application for a car workshop named Autoofficina Euganea. The application should serve as a digital ecosystem for customers and the workshop administration.
+<original_problem_statement>
+The user requested a full-stack application for a car workshop, Autoofficina Euganea. The initial goal was a mobile app (Android APK) featuring user authentication (social and classic), vehicle management, a booking system, service tracking, a showcase/portfolio, and an admin panel. During development, the primary goal shifted from a downloadable mobile APK to a permanently available **Web App**.
 
 **PRODUCT REQUIREMENTS**:
-- **Authentication**: User registration and login, initially requested with social login options.
-- **Vehicle Management**: Users should be able to save and manage their vehicle details (make, model, license plate).
-- **Booking System**: An intelligent calendar for booking services (e.g., oil change, tire change) with potential time/cost estimates.
-- **Live Tracking**: A timeline for customers to track the status of their vehicle's service (e.g., In progress, Ready for pickup).
-- **Showcase/Blog**: A section to display the workshop's work, like a portfolio.
-- **Admin Panel**: A web interface for the workshop to manage appointments and update service statuses.
-- **Contact & Communication**: Display workshop contact information (address, phone, email, hours) and implement a notification system for booking confirmations and status updates.
-- **Branding**: The app should be branded with the workshop's logo and colors.
+- **Authentication**: User registration and login with both Google and classic Email/Password.
+- **Admin Role**: A dedicated admin user for managing the workshop.
+- **Vehicle Management**: Users can add, view, and manage their vehicles. Forms must have input validation.
+- **Booking System**: Users can book services for their vehicles from a predefined list.
+- **Admin Panel**: A web interface for the workshop to manage all bookings and update their status.
+- **UX Improvements**: Add confirmation messages after actions and ensure clear navigation back to the home screen.
+- **Portfolio**: A section to showcase the workshop's completed jobs with photos and videos.
+- **Permanent Availability**: The application must be deployed as a web app with a permanent, always-online URL.
+</original_problem_statement>
+<User's_preferred_language>Italian. The next agent MUST respond in Italian.</User's_preferred_language>
+<what_currently_exists?>
+A complete full-stack web application.
+- **Backend**: A FastAPI application with endpoints for user authentication (Google &amp; Email/Password), CRUD operations for vehicles and bookings, and an admin panel API. It is connected to a production MongoDB Atlas database and is successfully deployed and **LIVE on Render.com**.
+- **Frontend**: An Expo (React Native for Web) application providing all user-facing features, including login/registration, vehicle management, a booking wizard, and an admin view. It is successfully deployed and **LIVE on Vercel**.
+- **Source Code**: The entire codebase is stored in a GitHub repository owned by the user.
 
-**User's preferred language**: Italian. The next agent MUST respond in Italian.
-
-**what currently exists?**
-A full-stack application has been developed using Expo (React Native) for the frontend and FastAPI for the backend with a MongoDB database. Key features are implemented:
-- **Frontend**: A complete mobile app with tab-based navigation, login screen, home dashboard, vehicle management, a multi-step booking process, booking tracking, and a profile section. The app is fully branded with the workshop's logo and colors.
-- **Backend**: A FastAPI server with endpoints for user authentication (via Emergent Google Social Login), CRUD operations for vehicles and bookings, an admin endpoint to manage bookings, and a mock email system that logs confirmation/update emails to the console. It also serves contact information and business hours.
-- **Documentation**: A PDF user manual was generated and is available via a download endpoint.
-
-The application is functionally complete from an MVP perspective but is currently **not deployable** due to build errors.
-
-**Last working item**:
-- **Last item agent was working on**: The agent was attempting to resolve fatal errors occurring during the EAS (Expo Application Services) build process, which are preventing the creation of a deployable Android app bundle. The agent correctly identified some issues from the build logs but was interrupted before implementing all fixes. The last action was viewing  to address an invalid project ID.
+However, the deployed frontend is **not yet connected** to the deployed backend, making the live web app non-functional.
+</what_currently_exists?>
+<Last_working_item>
+- **Last item agent was working on**: The agent had just completed the successful deployment of the frontend to Vercel. The immediate next step, which was identified but not executed, is to connect this live frontend to the live backend on Render. This involves setting an environment variable on Vercel.
 - **Status**: IN PROGRESS
-- **Agent Testing Done**: N (The build is failing, so no new artifact can be tested).
-- **Which testing method agent to use?**: Once the build is fixed, the agent should use the **frontend testing agent** to perform a full regression test, as multiple packages and configurations are being altered to fix the build. Manual testing with the screenshot tool should be used to verify the new icons.
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: Manual testing. After setting the environment variable and redeploying, the agent must visit the live Vercel URL and perform a full end-to-end test: register a new user, log in, add a vehicle, and create a booking.
 - **User Testing Done**: N
-
-**All Pending/In progress Issue list**:
-- **Issue 1: [P0] EAS Android Build is Failing**
+</Last_working_item>
+<All_Pending/In_progress_Issue_list>
+- **Issue 1: [P0] Live Web App is Not Functional**
+- **Issue 2: [P1] Admin Panel Access is Unrestricted**
+- **Issue 3: [P2] Email Notifications are Mocked**
 
 **Issues Detail**:
-- **Issue 1: EAS Android Build is Failing**
-    - **Description**: The deployment process, which uses EAS to build the Android app, is failing. The build logs indicate three distinct errors that are acting as blockers.
-    - **Attempted fixes**: The agent identified the issues from the logs and was about to edit  to fix the  but has not yet addressed the other two problems.
+- **Issue 1: Live Web App is Not Functional**
+    - **Description**: The frontend deployed on Vercel cannot communicate with the backend deployed on Render. This is because the frontend code needs to be told the URL of the live backend, which is done via an environment variable in the Vercel project settings.
+    - **Attempted fixes**: None. The problem was just identified as the final step of deployment.
     - **Next debug checklist**:
-        1.  **Fix Invalid **: In , locate the  key. Its value is currently , which is not a valid UUID. This key-value pair should be **removed entirely** from the  object. The build system will assign a valid one.
-        2.  **Fix Non-Square Icons**: The build log complains: .
-            - The agent needs to edit the icon files  and  to be perfectly square (e.g., 512x512 pixels). This may require an image manipulation tool or library if one is available.
-        3.  **Fix Missing  Dependency**: The build log repeatedly states: . This is a critical dependency issue.
-            - Open .
-            - Check if  is listed under .
-            - **Move  from  to **. This often solves such issues in build pipelines that might strip dev dependencies.
-            - If it's already in , ensure the version is compatible. A safe bet would be to run yarn add v1.22.22
-[1/4] Resolving packages...
-[2/4] Fetching packages...
-[3/4] Linking dependencies...
-[4/4] Building fresh packages...
-success Saved lockfile.
-success Saved 2 new dependencies.
-info Direct dependencies
-└─ @types/react@19.2.9
-info All dependencies
-├─ @types/react@19.2.9
-└─ csstype@3.2.3
-Done in 3.84s. inside  to refresh it.
-    - **Why fix this issue and what will be achieved with the fix?**: Fixing these three blockers is mandatory to get a successful Android build. Without this, the application cannot be deployed or distributed.
+        1.  **Confirm Frontend Code**: View  and ensure the  for axios is configured to use . If not, modify the file to use it.
+        2.  **Guide User in Vercel UI**: Instruct the user to navigate to their Vercel project dashboard for .
+        3.  Go to **Settings &gt; Environment Variables**.
+        4.  Add a new variable with the following details:
+            - **Name:** 
+            - **Value:** 
+        5.  Save the variable, ensuring it's applied to the Production environment.
+        6.  **Trigger a Redeployment**: Navigate to the Deployments tab in Vercel and trigger a new deploy for the  branch to apply the new environment variable.
+        7.  **Test**: Once the new deployment is live, thoroughly test the application at its public Vercel URL.
+    - **Why fix this issue and what will be achieved with the fix?**: This is the final and most critical step. Fixing this will result in a fully functional, permanently available web application that meets the user's primary request.
     - **Status**: IN PROGRESS
-    - **Is recurring issue?**: Y (Multiple deployment attempts have failed, though for different reasons previously).
-    - **Should Test frontend/backend/both after fix?**: Frontend. A full regression test is needed as the build process involves package upgrades and configuration changes.
-    - **Blocked on other issue**: None. This is the primary blocker.
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Frontend (via manual E2E testing on the live URL).
 
-**In progress Task List**:
-None. The only active work is fixing the deployment issue.
+- **Issue 2: Admin Panel Access is Unrestricted**
+    - **Description**: Currently, any authenticated user can navigate to the  URL and see the admin panel. Access should be restricted to users with the  field in the database.
+    - **Attempted fixes**: None.
+    - **Next debug checklist**:
+        1.  **Backend**: Create a protected endpoint (e.g., ) that only users with an admin role can access.
+        2.  **Frontend**: In the , when a user logs in, call this new endpoint. Store an  flag in the context state.
+        3.  **Frontend**: In the root layout ( or similar), protect the  route, redirecting non-admin users to the home page.
+    - **Why fix this issue and what will be achieved with the fix?**: To secure the admin panel and prevent regular users from accessing sensitive booking data.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both.
 
-**Upcoming and Future Tasks**
-- **Upcoming Tasks**:
-    - **P0 - Production Database Migration**: Migrate from the local MongoDB instance to a production-ready cloud database like MongoDB Atlas. This will require updating the  environment variable in the production environment.
-    - **P1 - Real Email Integration**: Replace the current mock email system. This involves configuring an SMTP service (like SendGrid, Mailgun) and updating the  function in  with real credentials (which should be stored in environment variables).
-    - **P2 - Instagram Feed Integration**: The showcase screen is currently a static placeholder. This task requires integrating with the Instagram Basic Display API to fetch and display the workshop's posts. This may require user consent and API keys.
+- **Issue 3: Email Notifications are Mocked**
+    - **Description**: The backend is configured to log email notifications to the console instead of sending real emails. The user has requested real notifications.
+    - **Attempted fixes**: None.
+    - **Next debug checklist**:
+        1.  Choose an email provider (e.g., SendGrid, Mailgun).
+        2.  Guide the user to create an account and get an API key.
+        3.  Add the API key to the backend environment variables on Render.com.
+        4.  Modify the  function in  to use the chosen provider's API to send emails.
+    - **Why fix this issue and what will be achieved with the fix?**: Fulfills a key product requirement for user communication and booking confirmations.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Backend.
+</All_Pending/In_progress_Issue_list>
+<In_progress_Task_List>
+- **Task 1: [P0] Finalize Web App Deployment**
+    - **Where to resume**: Guiding the user to add the backend URL as an environment variable in their Vercel project settings.
+    - **What will be achieved with this?**: A publicly accessible, fully functional, and persistent web application.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Frontend (manual E2E testing).
+    - **Blocked on something**: User action is required to add the variable in the Vercel UI.
+</In_progress_Task_List>
+<Upcoming_and_Future_Tasks>
+**Upcoming Tasks**:
+- **P1 - Implement Showcase/Portfolio**: The user wants a section showing off the workshop's work. The Showcase tab is currently a placeholder. The plan is to integrate the workshop's Instagram feed.
+- **P2 - Android APK Generation (On Hold)**: The user initially wanted an APK but has paused this in favor of the web app. The agent has created a guide () for the user to perform this step on their local machine, as it requires interactive CLI commands that are not possible in the current environment. This task should only be resumed if the user explicitly asks for it.
 
-- **Future Tasks**:
-    - **P2 - Real-time Push Notifications**: Configure and implement Expo Push Notifications to send real-time alerts to users when their vehicle status changes, instead of relying solely on emails.
-    - **P3 - Pagination for Admin Endpoints**: The admin endpoints that list bookings () could become slow with many records. Pagination should be implemented to improve performance.
+**Future Tasks**:
+- **P3 - WhatsApp Notifications**: The user expressed interest in WhatsApp notifications as a future enhancement. This would require integration with a service like Twilio's WhatsApp API.
+</Upcoming_and_Future_Tasks>
+<Completed_work_in_this_session>
+- **Deployment**:
+    - Migrated the database from local MongoDB to a production-ready MongoDB Atlas cluster.
+    - Successfully deployed the FastAPI backend to Render.com via a new GitHub repository.
+    - Successfully deployed the Expo web frontend to Vercel via the same GitHub repository.
+- **Authentication**:
+    - Implemented a complete classic authentication system (register/login with Email and Password) using  for hashing.
+    - Created a dedicated admin user () and a demo user ().
+    - Implemented an automatic redirect, sending admin users directly to the  panel after login.
+- **Features &amp; UX**:
+    - Added robust input validation for the vehicle registration and user registration forms.
+    - Populated the database with an initial list of workshop services, fixing a bug where the booking page was empty.
+    - Improved user flow with confirmation popups and clear navigation options after creating a vehicle or booking.
+- **Documentation**:
+    - Created a comprehensive user manual: .
+    - Created detailed guides for costs and local APK building.
+</Completed_work_in_this_session>
+<Code_Architecture>
 
-**Completed work in this session**
-- **Feature Implementation**:
-    - Full user authentication flow with Emergent Google Social Login.
-    - Complete CRUD functionality for user vehicles.
-    - Multi-step booking creation wizard.
-    - Vehicle service status tracking timeline.
-    - Admin panel for viewing all bookings and updating their status.
-    - Mock email notification system for booking confirmations and status updates.
-    - Dynamic contact info endpoint.
-    - PDF manual generation and a download endpoint ().
-- **User Interface & Branding**:
-    - Complete mobile app UI built with React Native and Expo.
-    - Tab-based navigation structure.
-    - Custom branding applied throughout the app, including a new logo, icons, and a consistent color scheme based on user feedback.
-- **Bug Fixes & Refinements**:
-    - Fixed an N+1 query issue in the admin bookings endpoint.
-    - Made the OAuth redirect URL dynamic to support multiple environments.
-    - Corrected business address and operating hours in all relevant files.
-    - Fixed the Logout button functionality for web and mobile platforms.
-    - Added explicit Close buttons to modal screens for better UX.
-
-**Earlier issues found/mentioned but not fixed**
-None. The agent has been diligent in addressing user-reported issues. The current focus is on the new build failures.
-
-**Known issue recurrence from previous fork**
-- **Issue recurrence**: Deployment failures. The agent has faced multiple deployment-related issues, including missing  files (false positive), hardcoded URLs, and now EAS build errors. This indicates a fragility in the deployment pipeline or configuration.
-- **Recurrence count**: 3+
-- **Status**: IN PROGRESS
-
-**Code Architecture**
-
-
-**Key Technical Concepts**
-- **Frontend**: React Native, Expo, Expo Router (file-based routing), TypeScript, Zustand (implicitly via AuthContext),  (implicitly for forms).
-- **Backend**: Python, FastAPI, Pydantic, Motor (async MongoDB driver).
-- **Database**: MongoDB.
-- **Authentication**: OAuth 2.0 with Emergent's Google Social Login service. Session managed via tokens stored in  on the client.
-- **Deployment**: The target is a containerized deployment on Kubernetes via Emergent's platform, using EAS for the mobile app build.
-
-**key DB schema**
+</Code_Architecture>
+<Key_Technical_Concepts>
+- **Frontend**: React Native for Web, Expo, Expo Router (file-based routing), TypeScript, Axios.
+- **Backend**: Python, FastAPI, Motor (async MongoDB driver), Pydantic, Bcrypt (for password hashing).
+- **Database**: MongoDB Atlas (cloud-hosted).
+- **Authentication**: Dual system with Emergent's Google Social Login (OAuth 2.0) and a custom JWT-based email/password flow.
+- **Deployment**:
+    - **Source Control**: GitHub.
+    - **Backend Hosting**: Render.com.
+    - **Frontend Hosting**: Vercel.
+</Key_Technical_Concepts>
+<key_DB_schema>
 - **users**: 
 - **vehicles**: 
 - **bookings**: 
-- **services**: A static list of services hardcoded in the backend, used for creating bookings.
-
-**changes in tech stack**
-None. The stack has remained consistent (Expo + FastAPI + MongoDB).
-
-**All files of reference**
-- **/app/frontend/app.json**: **CRITICAL**. Needs to be edited to remove  to fix the build.
-- **/app/frontend/package.json**: **CRITICAL**. Needs to be edited to move  to  to fix the build.
-- **/app/frontend/assets/images/icon.png**: **CRITICAL**. Needs to be resized to be square to fix the build.
-- **/app/frontend/assets/images/adaptive-icon.png**: **CRITICAL**. Needs to be resized to be square to fix the build.
-- **/app/backend/server.py**: Contains all backend logic, including API endpoints, DB models, and the mock email system.
-- **/app/frontend/src/contexts/AuthContext.tsx**: Manages user authentication state and logic.
-- **/app/frontend/app/(tabs)/home.tsx**: The main dashboard screen.
-- **/app/frontend/app/_layout.tsx**: Defines the root navigation stack.
-- **/app/frontend/app/(tabs)/_layout.tsx**: Defines the tab navigation.
-
-**Areas that need refactoring**:
-- The  script and its associated endpoint were a one-off request. In a production system, this would ideally be handled by a more robust documentation or reporting service.
-- The static list of services in  could be moved to the database to be more easily managed.
-
-**key api endpoints**
-- : Initiates Google Login.
-- : Fetches current user data.
-- : Gets workshop contact details.
-- : Lists available services.
-- : Manage user vehicles.
-- : Manage user bookings.
-- : Admin endpoint to view all bookings.
-- : Admin endpoint to update booking status.
-- : Downloads the generated PDF manual.
-
-**Critical Info for New Agent**
-- The immediate and only priority is to **fix the Android EAS build**. The user is waiting for a functional app.
-- The three known blockers are: an invalid  in , non-square app icons, and a missing  dependency during the build. All three must be fixed.
-- The email system is currently a **mock**. Do not treat it as a production-ready feature.
-- The database is the local instance. For true deployment, it must be migrated to a cloud provider like Atlas.
-- The user's language is **Italian**. All communication must be in Italian.
-
-**documents created in this job**
-- : A user manual for the application.
-- : The script used to create the manual.
-- : Early notes on testing authentication.
-
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Correct the business hours.
-2.  **Agent**: Confirms hours are updated everywhere.
-3.  **User**: Asks for another deployment readiness check.
-4.  **Agent**: Runs the check and fixes hardcoded URLs in email templates.
-5.  **User**: Provides new, failing deployment logs.
-6.  **Agent**: Analyzes logs, identifies 3 blockers (Auth redirect, Metro cache,  placement), and applies fixes.
-7.  **User**: Provides new, failing build logs for EAS.
-8.  **Agent**: Acknowledges the new build logs.
-9.  **User**: Asks what's next and expresses the desire for a working app (ok ora cosa facciamo voglio l app funzionante...).
-10. **Agent**: Acknowledges user frustration, identifies the  and icon issues from the new logs, and states it will fix them.
-11. **User**: asks to be communicated in Italian
-12. **Agent**: Agent explains the issues in Italian and is about to start fixing them.
-
-**Project Health Check:**
-- **Broken**: The application cannot be built or deployed due to critical errors in the EAS build configuration and dependencies.
-
-**3rd Party Integrations**
-- **Emergent Google Social Login**: Uses Emergent's infrastructure for authentication.
-- **Expo**: Core framework for the mobile app, including build services (EAS) and push notifications (not yet fully implemented).
-
-**Testing status**
-- **Testing agent used after significant changes**: YES (backend testing agent was used).
+- **services**: 
+</key_DB_schema>
+<changes_in_tech_stack>
+- **Database**: Migrated from a local MongoDB instance to a cloud-hosted MongoDB Atlas cluster for production.
+- **Deployment Strategy**: Shifted from building a mobile-only Android APK via EAS to deploying a full-stack Web App on a Vercel + Render stack.
+</changes_in_tech_stack>
+<All_files_of_reference>
+- **/app/frontend/src/services/api.ts**: **CRITICAL**. This file must be checked/modified to ensure it uses the  environment variable for its .
+- **/app/backend/server.py**: Contains all backend logic, including the new classic authentication endpoints and user role handling.
+- **/app/frontend/app/index.tsx**: The login/registration screen, completely rebuilt to support both Google and Email/Password flows.
+- **/app/frontend/src/contexts/AuthContext.tsx**: The core of the frontend authentication logic, updated to handle the dual auth systems and user roles.
+- **/app/MANUALE_UTENTE_COMPLETO.md**: The most up-to-date user documentation.
+</All_files_of_reference>
+<Critical_Info_for_New_Agent>
+- The user's primary goal is now a **fully functional, permanent web app**. The Android APK is a secondary, paused objective.
+- The **immediate and only P0 task** is to connect the live Vercel frontend to the live Render backend by setting the  environment variable on Vercel and triggering a redeploy.
+- The user has created their own accounts on GitHub, Vercel, and Render using their personal Google account (). You do not have access and must guide the user through the respective UIs to make changes (like adding the environment variable).
+- All communication must be in **Italian**.
+- After connecting the frontend and backend, perform a full end-to-end test on the live Vercel URL to confirm everything works before handing it off to the user.
+</Critical_Info_for_New_Agent>
+<documents_created_in_this_job>
+- /app/MANUALE_UTENTE_COMPLETO.md
+- /app/RIEPILOGO_SESSIONE.md
+- /app/GUIDA_BUILD_APK.md
+- /app/GUIDA_DETTAGLIATA_COMANDI.md
+- /app/COSTI_DETTAGLIATI.md
+</documents_created_in_this_job>
+<Last_10_User_Messages>
+1.  **User**: Asks about security of using IP 0.0.0.0/0 and running commands on their Mac. (Agent reassured them).
+2.  **User**: Follows agent's step-by-step guide to install Node.js and EAS CLI on their local Mac.
+3.  **User**: Is guided to download the project code, but fails. The agent then guides the user to create a blank project locally. This also fails due to permission issues.
+4.  **User**: After fixing permissions, successfully creates a blank project on their Mac and follows agent commands to configure it and launch the EAS build.
+5.  **User**: Reports the temporary preview link is not working. The agent debugs, finds the services list is empty, and populates the DB.
+6.  **User**: Provides feedback on the working preview: wants better navigation, confirmation messages, and a portfolio section. Also requests classic email/password login.
+7.  **User**: Asks for a permanent link that works even when the agent is offline. (Agent proposes Vercel/Render deployment).
+8.  **User**: Asks for clarification on how future updates and costs will work with a permanent deployment. (Agent provides detailed explanation).
+9.  **User**: Reports that the admin login doesn't redirect automatically to the admin page. (Agent implements a fix).
+10. **User**: Reports the preview link is not working again. The agent debugs and fixes multiple frontend login/redirect bugs.
+11. **User**: Asks to proceed with the free permanent web app deployment.
+12. **User**: Is guided through creating GitHub, Render, and Vercel accounts and connecting them.
+13. **User**: Follows instructions to deploy the backend to Render and the frontend to Vercel. Reports the final Vercel app is not working.
+</Last_10_User_Messages>
+<Project_Health_Check:>
+- **Broken**: The primary user-facing artifact, the live web app on Vercel, is non-functional because it cannot communicate with its backend.
+- **Mocked**: Email notifications are still mocked; they are logged to the console instead of being sent.
+</Project_Health_Check:>
+<3rd_Party_Integrations>
+- **Emergent Google Social Login**: Uses Emergent LLM Key for authentication.
+- **MongoDB Atlas**: Cloud database provider. Requires user-created account.
+- **Render.com**: Backend hosting platform. Requires user-created account.
+- **Vercel**: Frontend hosting platform. Requires user-created account.
+- **GitHub**: Source code management and CI/CD trigger for Render/Vercel. Requires user-created account.
+</3rd_Party_Integrations>
+<Testing_status>
+- **Testing agent used after significant changes**: YES, the backend testing agent was used and passed 17/17 tests before the Render deployment.
 - **Troubleshoot agent used after agent stuck in loop**: NO.
-- **Test files created**:
-    - 
-- **Known regressions**: None, as the latest changes cannot be deployed or tested. The main regression is the inability to build the project.
-
-**Credentials to test flow:**
-None required. The app uses Emergent's Google Social Login, so any Google account can be used for testing.
-
-**What agent forgot to execute**
-- In the latest analysis of the EAS build logs, the agent correctly identified the invalid  and non-square icon issues. However, it **failed to acknowledge or plan a fix for the third critical error** that appeared multiple times in the log: . This is a major oversight and a likely cause for the build failure.
-
+- **Test files created**: None.
+- **Known regressions**: The live web app is currently non-functional, which is a major regression from the working temporary preview URL.
+</Testing_status>
+<Credentials_to_test_flow:>
+- **Admin User**:  / 
+- **Demo User**:  / 
+</Credentials_to_test_flow:>
+<What_agent_forgot_to_execute>
+- The agent forgot to verify that the frontend code () is correctly written to consume the  environment variable. Before telling the user to set the variable on Vercel, the agent must first ensure the code will actually use it. This is a potential point of failure.
+</What_agent_forgot_to_execute>
 </analysis>
