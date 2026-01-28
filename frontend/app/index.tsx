@@ -50,13 +50,9 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('session_token', response.data.session_token);
         setUser(response.data.user);
         
-        // Redirect manuale immediato
-        if (Platform.OS === 'web') {
-          setTimeout(() => {
-            const isAdmin = response.data.user.role === 'admin';
-            window.location.href = isAdmin ? '/admin' : '/(tabs)/home';
-          }, 100);
-        }
+        // Redirect usando router
+        const isAdmin = response.data.user.role === 'admin';
+        router.replace(isAdmin ? '/admin' : '/(tabs)/home');
       }
     } catch (error: any) {
       console.error('Login error:', error);
