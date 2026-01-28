@@ -82,3 +82,7 @@ android-sdk/ -e
 *.env
 *.env.*
 autofficina-euganea-app.tar.gz
+-e 
+# Environment files
+*.env
+*.env.*
