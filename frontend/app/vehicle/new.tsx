@@ -78,14 +78,8 @@ export default function NewVehicleScreen() {
         targa: targaPulita,
         anno: anno ? parseInt(anno, 10) : undefined,
       });
-      Alert.alert(
-        '✅ Veicolo Aggiunto!',
-        'Il veicolo è stato registrato con successo. Ora puoi utilizzarlo per le prenotazioni!',
-        [
-          { text: 'Vai ai Veicoli', onPress: () => router.replace('/(tabs)/vehicles') },
-          { text: 'Torna alla Home', onPress: () => router.replace('/(tabs)/home'), style: 'cancel' }
-        ]
-      );
+      Alert.alert('✅ Veicolo Aggiunto!', 'Il veicolo è stato registrato con successo.');
+      router.replace('/(tabs)/vehicles');
     } catch (error) {
       console.error('Error creating vehicle:', error);
       Alert.alert('Errore', 'Impossibile aggiungere il veicolo');
