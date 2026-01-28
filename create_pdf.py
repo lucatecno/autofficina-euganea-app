@@ -38,9 +38,8 @@ def add_text(text):
 
 def add_bullet(text):
     pdf.set_font('Helvetica', '', 10)
-    pdf.cell(5, 5, '', new_x='RIGHT')
-    pdf.cell(5, 5, chr(149), new_x='RIGHT')
-    pdf.multi_cell(0, 5, text)
+    bullet_text = "  - " + text
+    pdf.multi_cell(0, 5, bullet_text)
 
 # PARTE 1
 pdf.add_page()
@@ -172,4 +171,4 @@ add_text('Email: info@autofficinaeuganea.it')
 add_text('Orari: Lun-Ven 8-18, Sab 8-12')
 
 pdf.output('/app/MANUALE_AUTOFFICINA_EUGANEA.pdf')
-print('PDF creato: /app/MANUALE_AUTOFFICINA_EUGANEA.pdf')
+print('PDF creato con successo!')
