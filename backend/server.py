@@ -731,6 +731,20 @@ async def get_contact_info():
         "email_mode": "mock" if EMAIL_MOCK_MODE else "live"
     }
 
+# ===================== MANUAL DOWNLOAD =====================
+
+@api_router.get("/download/manuale")
+async def download_manual():
+    """Download the user manual PDF"""
+    pdf_path = ROOT_DIR / "static" / "MANUALE_AUTOFFICINA_2026.pdf"
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+    return FileResponse(
+        path=str(pdf_path),
+        filename="Manuale_Autofficina_Euganea.pdf",
+        media_type="application/pdf"
+    )
+
 # ===================== VEHICLE ROUTES =====================
 
 @api_router.get("/vehicles", response_model=List[Vehicle])
