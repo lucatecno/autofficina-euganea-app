@@ -280,6 +280,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.background,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+  },
+  guidaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#9b59b620',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  guidaText: {
+    color: '#9b59b6',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
