@@ -38,7 +38,7 @@ export default function ManualeScreen() {
           <View style={styles.credCard}>
             <Text style={styles.credLabel}>👨‍💼 AMMINISTRATORE</Text>
             <Text style={styles.credText}>Email: <Text style={styles.credValue}>baxadmin@autofficina.it</Text></Text>
-            <Text style={styles.credText}>Password: <Text style={styles.credValue}>Bassinimerda1.</Text></Text>
+            <Text style={styles.credText}>Password: <Text style={styles.credValue}>Bassini1.</Text></Text>
           </View>
 
           <View style={styles.credCard}>
