@@ -678,34 +678,6 @@ async def login_user(credentials: UserLogin, response: Response):
         key="session_token",
         value=session_token,
         httponly=True,
-
-class PasswordChange(BaseModel):
-    email: str
-    old_password: str
-    new_password: str
-
-@api_router.post("/auth/change-password")
-async def change_password(data: PasswordChange):
-    """Change user password"""
-    # Find user
-    user = await db.users.find_one({"email": data.email.lower()})
-    if not user:
-        raise HTTPException(status_code=404, detail="Utente non trovato")
-    
-    # Verify old password
-    if not verify_password(data.old_password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Password attuale errata")
-    
-    # Hash new password
-    new_hash = hash_password(data.new_password)
-    
-    # Update password
-    await db.users.update_one(
-        {"email": data.email.lower()},
-        {"$set": {"password_hash": new_hash}}
-    )
-    
-    return {"message": "Password aggiornata con successo"}
         max_age=7 * 24 * 60 * 60,
         samesite="lax"
     )
