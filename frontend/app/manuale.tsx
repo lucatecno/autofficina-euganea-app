@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../src/contexts/AuthContext';
 
 const COLORS = {
   background: '#1a1a2e',
@@ -16,6 +17,20 @@ const COLORS = {
 
 export default function ManualeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Redirect se non admin
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      Alert.alert('Accesso negato', 'Questa sezione è riservata agli amministratori');
+      router.replace('/(tabs)/home');
+    }
+  }, [user]);
+
+  // Se non è admin, non mostrare nulla
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
