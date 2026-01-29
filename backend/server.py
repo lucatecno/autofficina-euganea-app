@@ -735,134 +735,123 @@ async def get_contact_info():
 
 @api_router.get("/download/manuale")
 async def download_manual():
-    """Download the user manual PDF - generates it on the fly"""
-    from io import BytesIO
+    """Download the user manual as HTML (converted to PDF by browser)"""
     
-    try:
-        from fpdf import FPDF
-    except ImportError:
-        raise HTTPException(status_code=500, detail="PDF library not available")
-    
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Arial', 'B', 11)
-            self.cell(0, 10, 'Autofficina Euganea - Manuale App', 0, 1, 'C')
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Manuale Autofficina Euganea</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            h1 { color: #2980b9; text-align: center; }
+            h2 { color: #27ae60; border-bottom: 2px solid #27ae60; padding-bottom: 5px; }
+            h3 { color: #e74c3c; }
+            .credentials { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; }
+            .credentials h3 { margin-top: 0; }
+            .cred-box { background: #fff; padding: 10px; margin: 10px 0; border-left: 4px solid #3498db; }
+            ul { line-height: 1.8; }
+            .footer { text-align: center; margin-top: 40px; color: #666; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <h1>MANUALE AUTOFFICINA EUGANEA</h1>
+        <p style="text-align:center">App Web per la Gestione Officina</p>
+        <p style="text-align:center"><strong>URL:</strong> <a href="https://autofficina-euganea-app.vercel.app">https://autofficina-euganea-app.vercel.app</a></p>
         
-        def footer(self):
-            self.set_y(-15)
-            self.set_font('Arial', 'I', 8)
-            self.cell(0, 10, 'Pagina ' + str(self.page_no()), 0, 0, 'C')
-
-    pdf = PDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    # COPERTINA
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 28)
-    pdf.ln(40)
-    pdf.cell(0, 15, 'MANUALE COMPLETO', 0, 1, 'C')
-    pdf.set_font('Arial', 'B', 24)
-    pdf.cell(0, 15, 'Autofficina Euganea', 0, 1, 'C')
-    pdf.set_font('Arial', '', 14)
-    pdf.cell(0, 10, 'App Web per la Gestione Officina', 0, 1, 'C')
-    pdf.ln(20)
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 10, 'URL APP:', 0, 1, 'C')
-    pdf.set_font('Arial', '', 12)
-    pdf.set_text_color(0, 102, 204)
-    pdf.cell(0, 8, 'https://autofficina-euganea-app.vercel.app', 0, 1, 'C')
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(30)
-    pdf.set_font('Arial', 'I', 10)
-    pdf.cell(0, 10, 'Aggiornato: Gennaio 2026', 0, 1, 'C')
-
-    # CREDENZIALI
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 18)
-    pdf.set_fill_color(220, 53, 69)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 12, ' CREDENZIALI DI ACCESSO ', 0, 1, 'C', True)
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(10)
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 10, 'ACCOUNT AMMINISTRATORE', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    pdf.set_fill_color(245, 245, 245)
-    pdf.cell(0, 8, 'Email: baxadmin@autofficina.it', 0, 1, 'L', True)
-    pdf.cell(0, 8, 'Password: Bassinimerda1.', 0, 1, 'L', True)
-    pdf.ln(10)
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 10, 'ACCOUNT UTENTE DI PROVA', 0, 1, 'L')
-    pdf.set_font('Arial', '', 12)
-    pdf.cell(0, 8, 'Email: demo@autofficina.it', 0, 1, 'L', True)
-    pdf.cell(0, 8, 'Password: Demo1234', 0, 1, 'L', True)
-
-    # GUIDA UTENTE
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 16)
-    pdf.set_fill_color(41, 128, 185)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, ' GUIDA UTENTE ', 0, 1, 'C', True)
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(5)
-    pdf.set_font('Arial', '', 11)
-    pdf.multi_cell(0, 6, '''1. ACCESSO: Vai su autofficina-euganea-app.vercel.app
-   - Google: Clicca "Accedi con Google"
-   - Email: Registrati o accedi con email/password
-
-2. AGGIUNGERE VEICOLO:
-   - Vai su "Veicoli" nella barra in basso
-   - Clicca "+ Aggiungi Veicolo"
-   - Inserisci Marca, Modello, Targa (formato AB123CD)
-
-3. PRENOTARE UN SERVIZIO:
-   - Clicca "Prenota"
-   - Seleziona veicolo, servizio, data e ora
-   - Conferma la prenotazione
-
-4. STATI PRENOTAZIONE:
-   - IN ATTESA: Da confermare
-   - CONFERMATA: Appuntamento confermato
-   - IN LAVORAZIONE: Auto in officina
-   - COMPLETATA: Pronta per il ritiro''')
-
-    # GUIDA ADMIN
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 16)
-    pdf.set_fill_color(40, 167, 69)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, ' GUIDA AMMINISTRATORE ', 0, 1, 'C', True)
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(5)
-    pdf.set_font('Arial', '', 11)
-    pdf.multi_cell(0, 6, '''1. ACCESSO ADMIN:
-   - Usa: baxadmin@autofficina.it / Bassinimerda1.
-   - Vai automaticamente al Pannello Admin
-
-2. GESTIONE PRENOTAZIONI:
-   - Vedi TUTTE le prenotazioni dei clienti
-   - Usa i filtri per stato o data
-   - Clicca su una prenotazione per gestirla
-
-3. AZIONI:
-   - CONFERMA: Accetta l'appuntamento
-   - INIZIA: Quando l'auto arriva in officina
-   - COMPLETA: Quando il lavoro e finito
-
-4. CONTATTI OFFICINA:
-   Via Galzignanese 14/A, Battaglia Terme (PD)
-   Tel: +39 320 314 5049
-   WhatsApp: +39 320 314 5049
-   Orari: Lun-Ven 8-19, Sab 8-12''')
-
-    # Generate PDF bytes
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
+        <div class="credentials">
+            <h3>🔑 CREDENZIALI DI ACCESSO</h3>
+            <div class="cred-box">
+                <strong>AMMINISTRATORE</strong><br>
+                Email: <code>baxadmin@autofficina.it</code><br>
+                Password: <code>Bassinimerda1.</code>
+            </div>
+            <div class="cred-box">
+                <strong>UTENTE DI PROVA</strong><br>
+                Email: <code>demo@autofficina.it</code><br>
+                Password: <code>Demo1234</code>
+            </div>
+        </div>
+        
+        <h2>GUIDA UTENTE</h2>
+        
+        <h3>1. Come Accedere</h3>
+        <ul>
+            <li><strong>Google:</strong> Clicca "Accedi con Google" e seleziona il tuo account</li>
+            <li><strong>Email:</strong> Registrati con nome, email e password (min 6 caratteri)</li>
+            <li><strong>Login:</strong> Se hai già un account, inserisci email e password</li>
+        </ul>
+        
+        <h3>2. Aggiungere un Veicolo</h3>
+        <ul>
+            <li>Vai su "Veicoli" nella barra in basso</li>
+            <li>Clicca "+ Aggiungi Veicolo"</li>
+            <li>Inserisci: Marca, Modello, Targa (formato AB123CD), Anno</li>
+            <li>Clicca "Aggiungi Veicolo"</li>
+        </ul>
+        
+        <h3>3. Prenotare un Servizio</h3>
+        <ul>
+            <li>Clicca "Prenota" nella barra in basso</li>
+            <li>Seleziona il veicolo</li>
+            <li>Scegli il servizio (Tagliando, Gomme, Freni, ecc.)</li>
+            <li>Seleziona data e orario</li>
+            <li>Conferma la prenotazione</li>
+        </ul>
+        
+        <h3>4. Stati Prenotazione</h3>
+        <ul>
+            <li><strong>IN ATTESA:</strong> Da confermare dall'officina</li>
+            <li><strong>CONFERMATA:</strong> Appuntamento confermato</li>
+            <li><strong>IN LAVORAZIONE:</strong> Veicolo in officina</li>
+            <li><strong>COMPLETATA:</strong> Pronta per il ritiro</li>
+        </ul>
+        
+        <h2>GUIDA AMMINISTRATORE</h2>
+        
+        <h3>1. Accesso Admin</h3>
+        <ul>
+            <li>Usa le credenziali admin sopra indicate</li>
+            <li>Verrai portato automaticamente al Pannello Admin</li>
+        </ul>
+        
+        <h3>2. Gestione Prenotazioni</h3>
+        <ul>
+            <li>Vedi TUTTE le prenotazioni di tutti i clienti</li>
+            <li>Usa i filtri per stato o data</li>
+            <li>Clicca su una prenotazione per gestirla</li>
+        </ul>
+        
+        <h3>3. Azioni Disponibili</h3>
+        <ul>
+            <li><strong>CONFERMA:</strong> Accetta l'appuntamento del cliente</li>
+            <li><strong>INIZIA LAVORAZIONE:</strong> Quando il veicolo arriva in officina</li>
+            <li><strong>COMPLETA:</strong> Quando il lavoro è terminato</li>
+        </ul>
+        
+        <h2>CONTATTI OFFICINA</h2>
+        <ul>
+            <li><strong>Indirizzo:</strong> Via Galzignanese 14/A, Battaglia Terme (PD)</li>
+            <li><strong>Telefono:</strong> +39 320 314 5049</li>
+            <li><strong>WhatsApp:</strong> +39 320 314 5049</li>
+            <li><strong>Email:</strong> autofficinaeuganea@libero.it</li>
+            <li><strong>Orari:</strong> Lun-Ven 8:00-19:00, Sab 8:00-12:00</li>
+        </ul>
+        
+        <div class="footer">
+            <p>Manuale Autofficina Euganea - Aggiornato Gennaio 2026</p>
+            <p><em>Per stampare: Ctrl+P (Windows) o Cmd+P (Mac) e seleziona "Salva come PDF"</em></p>
+        </div>
+    </body>
+    </html>
+    """
     
     return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
+        content=html_content,
+        media_type="text/html",
         headers={
-            "Content-Disposition": "attachment; filename=Manuale_Autofficina_Euganea.pdf"
+            "Content-Disposition": "inline; filename=Manuale_Autofficina_Euganea.html"
         }
     )
 
