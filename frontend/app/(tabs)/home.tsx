@@ -23,6 +23,12 @@ const WHATSAPP_NUMBER = '393203145049';
 const PHONE_NUMBER = '+393203145049';
 const EMAIL = 'autofficinaeuganea@libero.it';
 
+// Officina info - MODIFICA QUI PER CAMBIARE INDIRIZZO
+const OFFICINA_ADDRESS = 'Via Galzignana 14/A, Battaglia Terme (PD)';
+const OFFICINA_COORDS = '45.2893,11.7823'; // Coordinate approssimative Battaglia Terme
+const GOOGLE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Autofficina Euganea ' + OFFICINA_ADDRESS)}`;
+const GOOGLE_REVIEW_LINK = 'https://www.google.com/search?q=Autofficina+Euganea+Battaglia+Terme+recensioni';
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
