@@ -244,10 +244,11 @@ export default function HomeScreen() {
         {/* Info Card */}
         <View style={styles.section}>
           <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
+            <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(GOOGLE_MAPS_LINK)}>
               <Ionicons name="location" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>Via Galzignanese 14/A, Battaglia Terme (PD)</Text>
-            </View>
+              <Text style={[styles.infoText, { color: COLORS.primary }]}>{OFFICINA_ADDRESS}</Text>
+              <Ionicons name="navigate" size={16} color={COLORS.primary} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
             <View style={styles.infoRow}>
               <Ionicons name="time" size={20} color={COLORS.primary} />
               <Text style={styles.infoText}>Lun-Ven: 8:00 - 19:00 | Sab: 8:00 - 12:00</Text>
@@ -261,6 +262,18 @@ export default function HomeScreen() {
               <Text style={[styles.infoText, { color: COLORS.primary }]}>{EMAIL}</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Recensioni Google */}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.reviewButton}
+            onPress={() => Linking.openURL(GOOGLE_REVIEW_LINK)}
+          >
+            <Ionicons name="star" size={24} color="#FFC107" />
+            <Text style={styles.reviewText}>Lascia una Recensione su Google</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
