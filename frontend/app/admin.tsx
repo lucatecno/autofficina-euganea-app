@@ -29,6 +29,7 @@ const VEHICLE_STATUSES = [
 ];
 
 export default function AdminScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bookings, setBookings] = useState<EnrichedBooking[]>([]);
