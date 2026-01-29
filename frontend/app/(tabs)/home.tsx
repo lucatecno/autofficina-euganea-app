@@ -210,15 +210,17 @@ export default function HomeScreen() {
               <Text style={styles.actionText}>Lavori</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/manuale')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#9b59b6' + '20' }]}>
-                <Ionicons name="book" size={28} color="#9b59b6" />
-              </View>
-              <Text style={styles.actionText}>Guida</Text>
-            </TouchableOpacity>
+            {user?.role === 'admin' && (
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/manuale')}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#9b59b6' + '20' }]}>
+                  <Ionicons name="book" size={28} color="#9b59b6" />
+                </View>
+                <Text style={styles.actionText}>Guida</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
