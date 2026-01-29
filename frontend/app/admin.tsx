@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { useRouter } from 'expo-router';
 import { adminAPI } from '../src/services/api';
 import { EnrichedBooking } from '../src/types';
 import { Button } from '../src/components';
