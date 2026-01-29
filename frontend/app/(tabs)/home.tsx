@@ -453,4 +453,20 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     flex: 1,
   },
+  reviewButton: {
+    backgroundColor: COLORS.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#FFC107',
+  },
+  reviewText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFC107',
+  },
 });
