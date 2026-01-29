@@ -110,6 +110,18 @@ export default function AdminScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Header with Guida button */}
+      <View style={styles.headerRow}>
+        <Text style={styles.headerTitle}>Pannello Admin</Text>
+        <TouchableOpacity 
+          style={styles.guidaButton}
+          onPress={() => router.push('/manuale')}
+        >
+          <Ionicons name="book" size={18} color="#9b59b6" />
+          <Text style={styles.guidaText}>Guida</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         {([
